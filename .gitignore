@@ -1,0 +1,13 @@
+results/raw/
+*.jsonl
+*.jsonl.gz
+
+__pycache__/
+*.pyc
+.venv/
+.env
+
+edgar_corpus/pdfs/
+
+.DS_Store
+.vscode/
