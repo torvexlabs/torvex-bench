@@ -1,0 +1,66 @@
+{
+  "doclaynet": {
+    "dataset": "docling-project/DocLayNet-v1.2",
+    "split": "test",
+    "limit": 20,
+    "counted_samples": 20,
+    "pdf_available": 20,
+    "pages_with_tables": 12,
+    "pages_with_formulas": 0,
+    "fields": [
+      "image",
+      "bboxes",
+      "category_id",
+      "segmentation",
+      "area",
+      "pdf_cells",
+      "metadata",
+      "pdf",
+      "modalities"
+    ]
+  },
+  "fintabnet": {
+    "dataset": "docling-project/FinTabNet_OTSL",
+    "split": "test",
+    "limit": 20,
+    "counted_samples": 20,
+    "images_available": 20,
+    "html_available": 20,
+    "otsl_available": 20,
+    "fields": [
+      "filename",
+      "split",
+      "imgid",
+      "dataset",
+      "cells",
+      "otsl",
+      "html",
+      "html_restored",
+      "cols",
+      "rows",
+      "html_len",
+      "otsl_len",
+      "image"
+    ]
+  },
+  "omnidocbench": {
+    "dataset": "opendatalab/OmniDocBench",
+    "split": "train",
+    "limit": 20,
+    "counted_samples": 20,
+    "pages_with_tables": 0,
+    "pages_with_formulas": 0,
+    "possible_scanned_pages": 0,
+    "fields": [
+      "image"
+    ]
+  },
+  "olmocr": {
+    "dataset": "allenai/olmOCR-bench",
+    "split": "benchmark",
+    "pdfs": 1403,
+    "unit_tests": 7010,
+    "metric": "unit_test_pass_rate",
+    "note": "Use unit test pass rate only. Do not use CER for olmOCR-bench."
+  }
+}
