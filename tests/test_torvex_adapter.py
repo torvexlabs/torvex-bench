@@ -3,6 +3,7 @@ from pathlib import Path
 
 from torvex_bench.adapters.base import DocumentResult, PageResult, TableResult
 from torvex_bench.adapters.torvex_extract_adapter import (
+    TorvexExtractAdapter,
     convert_document,
     convert_page,
     convert_table,
@@ -262,3 +263,12 @@ def test_convert_document_reads_invoice_sample_output():
     assert first_table.bbox_plumber is not None
     assert first_table.bbox_px is not None
     assert first_table.source != "unknown"
+
+
+def test_torvex_extract_adapter_imports():
+    adapter = TorvexExtractAdapter()
+
+    assert adapter.name == "torvex_extract"
+    assert adapter.version == "0.1.0"
+    assert callable(adapter.extract)
+    assert callable(adapter.extract_document)

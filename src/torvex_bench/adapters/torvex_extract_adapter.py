@@ -27,9 +27,10 @@ table["warnings"]      →   TableResult.metadata["warnings"]
 """
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
-from torvex_bench.adapters.base import DocumentResult, PageResult, TableResult
+from torvex_bench.adapters.base import ExtractionAdapter, DocumentResult, PageResult, TableResult
 
 
 def get_formula_bboxes(page: dict[str, Any]) -> list[list[float]]:
@@ -184,3 +185,52 @@ def convert_document(
         errors=list(raw_output.get("errors") or []),
         metadata=metadata,
     )
+
+
+
+class TorvexExtractAdapter(ExtractionAdapter):
+    """
+    Real Torvex Extract adapter.
+
+    Calls torvex-extract engine, then converts raw output
+    into benchmark DocumentResult.
+    """
+
+    name = "torvex_extract"
+    version = "0.1.0"
+
+    def __init__(self) -> None:
+        self._warmed = False
+
+    def _ensure_warmed(self) -> None:
+        if self._warmed:
+            return
+
+        from torvex_extract.visual_zoning import engine
+
+        if not engine.is_warmed():
+            engine.warm()
+
+        self._warmed = True
+
+    def extract_document(self, pdf_path: str | Path) -> DocumentResult:
+        self._ensure_warmed()
+
+        from torvex_extract import extract_with_pypdfium2
+
+        pages, errors = extract_with_pypdfium2(str(pdf_path))
+
+        raw_output = {
+            "pdf": str(pdf_path),
+            "pages": pages,
+            "errors": errors,
+            "metadata": {
+                "adapter": self.name,
+                "adapter_version": self.version,
+            },
+        }
+
+        return convert_document(raw_output, pdf_path=str(pdf_path))
+
+    def extract(self, pdf_path: str | Path) -> DocumentResult:
+        return self.extract_document(pdf_path)

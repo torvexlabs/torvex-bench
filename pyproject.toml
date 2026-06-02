@@ -30,6 +30,7 @@ dependencies = [
   "img2pdf>=0.5.1",
   "pypdfium2>=4.30.0",
   "pdfplumber>=0.11.4",
+  "torvex-extract",
 ]
 
 [project.optional-dependencies]
@@ -52,3 +53,6 @@ packages = ["src/torvex_bench"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+
+[tool.uv.sources]
+torvex-extract = { path = "../torvex-extract", editable = true }

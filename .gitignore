@@ -15,3 +15,6 @@ edgar_corpus/pdfs/
 .DS_Store
 
 docs/
+
+# Local smoke outputs
+results/smoke/
