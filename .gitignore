@@ -4,10 +4,14 @@ results/raw/
 
 __pycache__/
 *.pyc
+.pytest_cache/
 .venv/
 .env
+.cache/
+.vscode/
 
 edgar_corpus/pdfs/
 
 .DS_Store
-.vscode/
+
+docs/

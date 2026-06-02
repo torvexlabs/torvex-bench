@@ -1,9 +1,5 @@
 from typing import Any
 
-from torvex_bench.adapters.base import TableResult
-
-from torvex_bench.adapters.base import PageResult, TableResult
-
 from torvex_bench.adapters.base import DocumentResult, PageResult, TableResult
 
 

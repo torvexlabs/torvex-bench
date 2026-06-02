@@ -1,0 +1,1707 @@
+{
+  "pdf": "test_docs/01_AAPL_AnnualReport_2024_CLEAN.pdf",
+  "errors": [],
+  "pages": [
+    {
+      "page_num": 0,
+      "is_tagged": false,
+      "needs_ocr": false,
+      "ocr_reason": "clean",
+      "final_text": "UNITED STATES\nSECURITIES AND EXCHANGE COMMISSION\nWashington, D.C. 20549\nFORM 10-K\n(Mark One)\n\u2612 ANNUAL REPORT PURSUANT TO SECTION 13 OR 15(d) OF THE SECURITIES EXCHANGE ACT OF 1934\nFor the fiscal year ended September 28, 2024\nor\n\u2610 TRANSITION REPORT PURSUANT TO SECTION 13 OR 15(d) OF THE SECURITIES EXCHANGE ACT OF 1934\nFor the transition period from to .\nCommission File Number: 001-36743\nApple Inc.\n(Exact name of Registrant as specified in its charter)\n94-2404110\n(I.R.S. Employer Identification No.)\nCalifornia\n(State or other jurisdiction\nof incorporation or organization)\nOne Apple Park Way\nCupertino, California\n(Address of principal executive offices)\n95014\n(Zip Code)\n(408) 996-1010\n(Registrant\u2019s telephone number, including area code)\nSecurities registered pursuant to Section 12(b) of the Act:\nName of each exchange on which registered\nTitle of each class\nTrading symbol(s)\nName of each exchange on which registere\nThe Nasdaq Stock Market LLC\nCommon Stock, $0.00001 par value per share\ngg\n0.000% Notes due 2025\n0.875% Notes due 2025\nq\nThe Nasdaq Stock Market LLC\n1.625% Notes due 2026\n2.000% Notes due 2027\nq\nThe Nasdaq Stock Market LLC\n1.375% Notes due 2029\n3050% Nd2029\n3.050% Notes due 2029\n0.500% Notes due 2031\nq\nThe Nasdaq Stock Market LLC\n3.600% Notes due 2042\nSecurities registered pursuant to Section 12(g) of the Act: None\nIndicate by check mark if the Registrant is a well-known seasoned issuer, as defined in Rule 405 of the Securities Act.\nYes \u2612 No \u2610\nIndicate by check mark if the Registrant is not required to file reports pursuant to Section 13 or Section 15(d) of the Act.\nYes \u2610 No \u2612\nIndicate by check mark whether the Registrant (1) has filed all reports required to be filed by Section 13 or 15(d) of the Securities Exchange Act of 1934 during the preceding 12\nmonths (or for such shorter period that the Registrant was required to file such reports), and (2) has been subject to such filing requirements for the past 90 days.\nYes \u2612 No \u2610\nIndicate by check mark whether the Registrant has submitted electronically every Interactive Data File required to be submitted pursuant to Rule 405 of Regulation S-T (\u00a7232.405 of\nthis chapter) during the preceding 12 months (or for such shorter period that the Registrant was required to submit such files).\nYes \u2612",
+      "page_width": 612.0,
+      "page_height": 792.0,
+      "effective_page_width_pt": 612.0,
+      "effective_page_height_pt": 792.0,
+      "image": null,
+      "img_np": null,
+      "has_bordered_table": false,
+      "zones": [
+        {
+          "type": "doc_title",
+          "label_id": 6,
+          "score": 0.9097033739089966,
+          "mask_id": 8,
+          "bbox_px": [
+            499.4102478027344,
+            198.18328857421875,
+            1198.6290283203125,
+            314.474609375
+          ],
+          "bbox_pdfium": [
+            177.78768920898438,
+            676.789140625,
+            433.5064501953125,
+            722.6540161132813
+          ],
+          "bbox_plumber": [
+            177.78768920898438,
+            69.34598388671874,
+            433.5064501953125,
+            115.210859375
+          ],
+          "zone_text": "UNITED STATES\nSECURITIES AND EXCHANGE COMMISSION\nWashington, D.C. 20549"
+        },
+        {
+          "type": "doc_title",
+          "label_id": 6,
+          "score": 0.2736399173736572,
+          "mask_id": 15,
+          "bbox_px": [
+            731.7191162109375,
+            370.6877136230469,
+            970.9964599609375,
+            418.1988830566406
+          ],
+          "bbox_pdfium": [
+            261.4188818359375,
+            639.4484020996094,
+            351.5587255859375,
+            660.5524230957031
+          ],
+          "bbox_plumber": [
+            261.4188818359375,
+            131.44757690429688,
+            351.5587255859375,
+            152.55159790039062
+          ],
+          "zone_text": "FORM 10-K"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.29374372959136963,
+          "mask_id": 15,
+          "bbox_px": [
+            731.7191162109375,
+            370.6877136230469,
+            970.9964599609375,
+            418.1988830566406
+          ],
+          "bbox_pdfium": [
+            261.4188818359375,
+            639.4484020996094,
+            351.5587255859375,
+            660.5524230957031
+          ],
+          "bbox_plumber": [
+            261.4188818359375,
+            131.44757690429688,
+            351.5587255859375,
+            152.55159790039062
+          ],
+          "zone_text": "FORM 10-K"
+        },
+        {
+          "type": "paragraph_title",
+          "label_id": 17,
+          "score": 0.49560487270355225,
+          "mask_id": 15,
+          "bbox_px": [
+            731.7191162109375,
+            370.6877136230469,
+            970.9964599609375,
+            418.1988830566406
+          ],
+          "bbox_pdfium": [
+            261.4188818359375,
+            639.4484020996094,
+            351.5587255859375,
+            660.5524230957031
+          ],
+          "bbox_plumber": [
+            261.4188818359375,
+            131.44757690429688,
+            351.5587255859375,
+            152.55159790039062
+          ],
+          "zone_text": "FORM 10-K"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.4991687536239624,
+          "mask_id": 18,
+          "bbox_px": [
+            45.075462341308594,
+            451.6852111816406,
+            157.60870361328125,
+            481.10552978515625
+          ],
+          "bbox_pdfium": [
+            14.227166442871095,
+            616.8020092773438,
+            58.73913330078125,
+            631.3933239746094
+          ],
+          "bbox_plumber": [
+            14.227166442871095,
+            160.6066760253906,
+            58.73913330078125,
+            175.19799072265624
+          ],
+          "zone_text": "(Mark One)"
+        },
+        {
+          "type": "paragraph_title",
+          "label_id": 17,
+          "score": 0.26390987634658813,
+          "mask_id": 18,
+          "bbox_px": [
+            45.075462341308594,
+            451.6852111816406,
+            157.60870361328125,
+            481.10552978515625
+          ],
+          "bbox_pdfium": [
+            14.227166442871095,
+            616.8020092773438,
+            58.73913330078125,
+            631.3933239746094
+          ],
+          "bbox_plumber": [
+            14.227166442871095,
+            160.6066760253906,
+            58.73913330078125,
+            175.19799072265624
+          ],
+          "zone_text": "(Mark One)"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.8236995339393616,
+          "mask_id": 20,
+          "bbox_px": [
+            269.7338562011719,
+            482.66119384765625,
+            1427.635498046875,
+            558.7008666992188
+          ],
+          "bbox_pdfium": [
+            95.10418823242188,
+            588.8676879882812,
+            515.9487792968749,
+            620.2419702148437
+          ],
+          "bbox_plumber": [
+            95.10418823242188,
+            171.75802978515625,
+            515.9487792968749,
+            203.13231201171874
+          ],
+          "zone_text": "\u2612 ANNUAL REPORT PURSUANT TO SECTION 13 OR 15(d) OF THE SECURITIES EXCHANGE ACT OF 1934\nFor the fiscal year ended September 28, 2024\nor"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.8090473413467407,
+          "mask_id": 45,
+          "bbox_px": [
+            252.0399627685547,
+            585.9201049804688,
+            1447.08642578125,
+            693.4681396484375
+          ],
+          "bbox_pdfium": [
+            88.73438659667968,
+            540.3514697265625,
+            522.95111328125,
+            583.0687622070312
+          ],
+          "bbox_plumber": [
+            88.73438659667968,
+            208.93123779296874,
+            522.95111328125,
+            251.6485302734375
+          ],
+          "zone_text": "\u2610 TRANSITION REPORT PURSUANT TO SECTION 13 OR 15(d) OF THE SECURITIES EXCHANGE ACT OF 1934\nFor the transition period from to .\nCommission File Number: 001-36743"
+        },
+        {
+          "type": "image",
+          "label_id": 14,
+          "score": 0.8407001495361328,
+          "mask_id": 61,
+          "bbox_px": [
+            811.2405395507812,
+            723.24072265625,
+            887.623779296875,
+            811.3089599609375
+          ],
+          "bbox_pdfium": [
+            290.0465942382812,
+            497.9287744140625,
+            321.544560546875,
+            533.63333984375
+          ],
+          "bbox_plumber": [
+            290.0465942382812,
+            258.36666015624996,
+            321.544560546875,
+            294.0712255859375
+          ],
+          "zone_text": ""
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.6527931094169617,
+          "mask_id": 65,
+          "bbox_px": [
+            582.859375,
+            835.9761352539062,
+            1118.8001708984375,
+            929.7197875976562
+          ],
+          "bbox_pdfium": [
+            207.829375,
+            455.3008764648438,
+            404.7680615234375,
+            493.04859130859376
+          ],
+          "bbox_plumber": [
+            207.829375,
+            298.95140869140624,
+            404.7680615234375,
+            336.6991235351562
+          ],
+          "zone_text": "Apple Inc.\n(Exact name of Registrant as specified in its charter)"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.25232869386672974,
+          "mask_id": 66,
+          "bbox_px": [
+            583.635009765625,
+            896.4407958984375,
+            1115.405517578125,
+            928.1619873046875
+          ],
+          "bbox_pdfium": [
+            208.108603515625,
+            455.8616845703125,
+            403.54598632812497,
+            471.2813134765625
+          ],
+          "bbox_plumber": [
+            208.108603515625,
+            320.7186865234375,
+            403.54598632812497,
+            336.1383154296875
+          ],
+          "zone_text": "(Exact name of Registrant as specified in its charter)"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.8253532648086548,
+          "mask_id": 73,
+          "bbox_px": [
+            1132.0997314453125,
+            966.8838500976562,
+            1451.0625,
+            1028.1734619140625
+          ],
+          "bbox_pdfium": [
+            405.5559033203125,
+            419.8575537109375,
+            524.3824999999999,
+            445.92181396484375
+          ],
+          "bbox_plumber": [
+            405.5559033203125,
+            346.07818603515625,
+            524.3824999999999,
+            372.1424462890625
+          ],
+          "zone_text": "94-2404110\n(I.R.S. Employer Identification No.)"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.832114577293396,
+          "mask_id": 68,
+          "bbox_px": [
+            261.6433410644531,
+            966.9537353515625,
+            557.69677734375,
+            1049.2799072265625
+          ],
+          "bbox_pdfium": [
+            92.19160278320312,
+            412.2592333984375,
+            202.77083984375,
+            445.8966552734375
+          ],
+          "bbox_plumber": [
+            92.19160278320312,
+            346.1033447265625,
+            202.77083984375,
+            379.7407666015625
+          ],
+          "zone_text": "California\n(State or other jurisdiction\nof incorporation or organization)"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.8668487071990967,
+          "mask_id": 76,
+          "bbox_px": [
+            232.34230041503906,
+            1061.769775390625,
+            587.5791015625,
+            1151.47802734375
+          ],
+          "bbox_pdfium": [
+            81.64322814941406,
+            375.46791015625,
+            213.5284765625,
+            411.762880859375
+          ],
+          "bbox_plumber": [
+            81.64322814941406,
+            380.237119140625,
+            213.5284765625,
+            416.53208984375
+          ],
+          "zone_text": "One Apple Park Way\nCupertino, California\n(Address of principal executive offices)"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.8218315839767456,
+          "mask_id": 84,
+          "bbox_px": [
+            1239.33984375,
+            1091.673828125,
+            1343.606689453125,
+            1151.5311279296875
+          ],
+          "bbox_pdfium": [
+            444.16234375,
+            375.4487939453125,
+            485.698408203125,
+            400.997421875
+          ],
+          "bbox_plumber": [
+            444.16234375,
+            391.002578125,
+            485.698408203125,
+            416.5512060546875
+          ],
+          "zone_text": "95014\n(Zip Code)"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.8377894163131714,
+          "mask_id": 90,
+          "bbox_px": [
+            609.9061889648438,
+            1166.0294189453125,
+            1090.5888671875,
+            1221.26513671875
+          ],
+          "bbox_pdfium": [
+            217.56622802734375,
+            350.34455078125,
+            394.6119921875,
+            374.22940917968754
+          ],
+          "bbox_plumber": [
+            217.56622802734375,
+            417.77059082031246,
+            394.6119921875,
+            441.65544921875
+          ],
+          "zone_text": "(408) 996-1010\n(Registrant\u2019s telephone number, including area code)"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.7362257242202759,
+          "mask_id": 98,
+          "bbox_px": [
+            591.5253295898438,
+            1264.69775390625,
+            1108.6390380859375,
+            1294.06640625
+          ],
+          "bbox_pdfium": [
+            210.94911865234374,
+            324.13609375000004,
+            401.1100537109375,
+            338.70880859375
+          ],
+          "bbox_plumber": [
+            210.94911865234374,
+            453.29119140625,
+            401.1100537109375,
+            467.86390624999996
+          ],
+          "zone_text": "Securities registered pursuant to Section 12(b) of the Act:"
+        },
+        {
+          "type": "table",
+          "label_id": 21,
+          "score": 0.33328142762184143,
+          "mask_id": 105,
+          "bbox_px": [
+            141.6360321044922,
+            1304.3121337890625,
+            1484.099365234375,
+            1611.4114990234375
+          ],
+          "bbox_pdfium": [
+            48.988971557617184,
+            209.8918603515625,
+            536.275771484375,
+            324.4476318359375
+          ],
+          "bbox_plumber": [
+            48.988971557617184,
+            467.5523681640625,
+            536.275771484375,
+            582.1081396484375
+          ],
+          "zone_text": ""
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.35953229665756226,
+          "mask_id": 120,
+          "bbox_px": [
+            1088.2679443359375,
+            1308.5059814453125,
+            1492.885986328125,
+            1335.21533203125
+          ],
+          "bbox_pdfium": [
+            389.7764599609375,
+            309.32248046875003,
+            539.438955078125,
+            322.93784667968754
+          ],
+          "bbox_plumber": [
+            389.7764599609375,
+            469.06215332031246,
+            539.438955078125,
+            482.67751953124997
+          ],
+          "zone_text": "Name of each exchange on which registered"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.29820674657821655,
+          "mask_id": 102,
+          "bbox_px": [
+            322.604248046875,
+            1309.133544921875,
+            494.4509582519531,
+            1334.4224853515625
+          ],
+          "bbox_pdfium": [
+            114.137529296875,
+            309.6079052734375,
+            180.00234497070312,
+            322.711923828125
+          ],
+          "bbox_plumber": [
+            114.137529296875,
+            469.288076171875,
+            180.00234497070312,
+            482.3920947265625
+          ],
+          "zone_text": "Title of each class"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.30556413531303406,
+          "mask_id": 108,
+          "bbox_px": [
+            766.16015625,
+            1309.4052734375,
+            934.5669555664062,
+            1337.374755859375
+          ],
+          "bbox_pdfium": [
+            273.81765624999997,
+            308.54508789062504,
+            338.44410400390626,
+            322.6141015625
+          ],
+          "bbox_plumber": [
+            273.81765624999997,
+            469.3858984375,
+            338.44410400390626,
+            483.45491210937496
+          ],
+          "zone_text": "Trading symbol(s)"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.404188871383667,
+          "mask_id": 201,
+          "bbox_px": [
+            1110.5609130859375,
+            1323.5799560546875,
+            1464.5047607421875,
+            1610.3134765625
+          ],
+          "bbox_pdfium": [
+            397.8019287109375,
+            210.28714843750004,
+            529.2217138671875,
+            317.51121582031254
+          ],
+          "bbox_plumber": [
+            397.8019287109375,
+            474.48878417968746,
+            529.2217138671875,
+            581.7128515625
+          ],
+          "zone_text": "Name of each exchange on which registere\nThe Nasdaq Stock Market LLC\nThe Nasdaq Stock Market LLC\nThe Nasdaq Stock Market LLC\nThe Nasdaq Stock Market LLC\nThe Nasdaq Stock Market LLC\nThe Nasdaq Stock Market LLC\nThe Nasdaq Stock Market LLC\nThe Nasdaq Stock Market LLC\nThe Nasdaq Stock Market LLC"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.3341146409511566,
+          "mask_id": 106,
+          "bbox_px": [
+            149.7458038330078,
+            1337.6634521484375,
+            645.9888305664062,
+            1366.673095703125
+          ],
+          "bbox_pdfium": [
+            51.90848937988281,
+            297.997685546875,
+            234.55597900390623,
+            312.4411572265625
+          ],
+          "bbox_plumber": [
+            51.90848937988281,
+            479.5588427734375,
+            234.55597900390623,
+            494.002314453125
+          ],
+          "zone_text": "Common Stock, $0.00001 par value per share"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.26802393794059753,
+          "mask_id": 132,
+          "bbox_px": [
+            1118.569580078125,
+            1338.21044921875,
+            1460.535888671875,
+            1365.6822509765625
+          ],
+          "bbox_pdfium": [
+            400.685048828125,
+            298.3543896484375,
+            527.792919921875,
+            312.24423828125003
+          ],
+          "bbox_plumber": [
+            400.685048828125,
+            479.75576171874997,
+            527.792919921875,
+            493.6456103515625
+          ],
+          "zone_text": "gg\nThe Nasdaq Stock Market LLC"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.3230220079421997,
+          "mask_id": 118,
+          "bbox_px": [
+            278.4917907714844,
+            1369.93359375,
+            539.6286010742188,
+            1394.8819580078125
+          ],
+          "bbox_pdfium": [
+            98.25704467773437,
+            287.8424951171875,
+            196.26629638671875,
+            300.82390625
+          ],
+          "bbox_plumber": [
+            98.25704467773437,
+            491.17609375,
+            196.26629638671875,
+            504.1575048828125
+          ],
+          "zone_text": "0.000% Notes due 2025"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.3754298686981201,
+          "mask_id": 137,
+          "bbox_px": [
+            276.85772705078125,
+            1397.260986328125,
+            541.0895385742188,
+            1425.92333984375
+          ],
+          "bbox_pdfium": [
+            97.66878173828124,
+            276.66759765625,
+            196.79223388671875,
+            290.986044921875
+          ],
+          "bbox_plumber": [
+            97.66878173828124,
+            501.013955078125,
+            196.79223388671875,
+            515.33240234375
+          ],
+          "zone_text": "0.875% Notes due 2025"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.2822963297367096,
+          "mask_id": 173,
+          "bbox_px": [
+            1122.171142578125,
+            1398.44970703125,
+            1458.00390625,
+            1425.6768798828125
+          ],
+          "bbox_pdfium": [
+            401.981611328125,
+            276.7563232421875,
+            526.8814062499999,
+            290.55810546875
+          ],
+          "bbox_plumber": [
+            401.981611328125,
+            501.44189453125,
+            526.8814062499999,
+            515.2436767578125
+          ],
+          "zone_text": "q\nThe Nasdaq Stock Market LLC"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.2537269592285156,
+          "mask_id": 178,
+          "bbox_px": [
+            1123.82763671875,
+            1426.0919189453125,
+            1459.4537353515625,
+            1454.7886962890625
+          ],
+          "bbox_pdfium": [
+            402.57794921875,
+            266.27606933593756,
+            527.4033447265625,
+            280.6069091796875
+          ],
+          "bbox_plumber": [
+            402.57794921875,
+            511.3930908203125,
+            527.4033447265625,
+            525.7239306640624
+          ],
+          "zone_text": "q\nThe Nasdaq Stock Market LLC"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.39159536361694336,
+          "mask_id": 151,
+          "bbox_px": [
+            278.28253173828125,
+            1428.190673828125,
+            540.8521118164062,
+            1455.42919921875
+          ],
+          "bbox_pdfium": [
+            98.18171142578124,
+            266.0454882812501,
+            196.70676025390625,
+            279.85135742187504
+          ],
+          "bbox_plumber": [
+            98.18171142578124,
+            512.148642578125,
+            196.70676025390625,
+            525.9545117187499
+          ],
+          "zone_text": "1.625% Notes due 2026"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.3259853720664978,
+          "mask_id": 164,
+          "bbox_px": [
+            278.39654541015625,
+            1457.3609619140625,
+            540.3303833007812,
+            1485.717529296875
+          ],
+          "bbox_pdfium": [
+            98.22275634765624,
+            255.14168945312497,
+            196.51893798828124,
+            269.3500537109376
+          ],
+          "bbox_plumber": [
+            98.22275634765624,
+            522.6499462890624,
+            196.51893798828124,
+            536.858310546875
+          ],
+          "zone_text": "2.000% Notes due 2027"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.2733764350414276,
+          "mask_id": 199,
+          "bbox_px": [
+            1123.642822265625,
+            1457.7091064453125,
+            1458.90283203125,
+            1485.913330078125
+          ],
+          "bbox_pdfium": [
+            402.511416015625,
+            255.07120117187503,
+            527.20501953125,
+            269.2247216796875
+          ],
+          "bbox_plumber": [
+            402.511416015625,
+            522.7752783203125,
+            527.20501953125,
+            536.928798828125
+          ],
+          "zone_text": "q\nThe Nasdaq Stock Market LLC"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.34075117111206055,
+          "mask_id": 184,
+          "bbox_px": [
+            278.9534912109375,
+            1488.3516845703125,
+            539.689697265625,
+            1517.734619140625
+          ],
+          "bbox_pdfium": [
+            98.4232568359375,
+            243.61553710937505,
+            196.288291015625,
+            258.19339355468753
+          ],
+          "bbox_plumber": [
+            98.4232568359375,
+            533.8066064453125,
+            196.288291015625,
+            548.384462890625
+          ],
+          "zone_text": "1.375% Notes due 2029\n3050% Nd2029"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.3673570454120636,
+          "mask_id": 197,
+          "bbox_px": [
+            279.802978515625,
+            1517.133544921875,
+            539.6802978515625,
+            1544.08447265625
+          ],
+          "bbox_pdfium": [
+            98.72907226562499,
+            234.12958984375007,
+            196.2849072265625,
+            247.831923828125
+          ],
+          "bbox_plumber": [
+            98.72907226562499,
+            544.168076171875,
+            196.2849072265625,
+            557.8704101562499
+          ],
+          "zone_text": "3.050% Notes due 2029"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.4245102107524872,
+          "mask_id": 225,
+          "bbox_px": [
+            279.12481689453125,
+            1548.32763671875,
+            538.3340454101562,
+            1574.374267578125
+          ],
+          "bbox_pdfium": [
+            98.48493408203124,
+            223.22526367187504,
+            195.80025634765624,
+            236.60205078125
+          ],
+          "bbox_plumber": [
+            98.48493408203124,
+            555.39794921875,
+            195.80025634765624,
+            568.774736328125
+          ],
+          "zone_text": "0.500% Notes due 2031"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.25661903619766235,
+          "mask_id": 249,
+          "bbox_px": [
+            1125.305419921875,
+            1576.670654296875,
+            1457.323486328125,
+            1606.8912353515625
+          ],
+          "bbox_pdfium": [
+            403.10995117187497,
+            211.5191552734375,
+            526.636455078125,
+            226.398564453125
+          ],
+          "bbox_plumber": [
+            403.10995117187497,
+            565.601435546875,
+            526.636455078125,
+            580.4808447265625
+          ],
+          "zone_text": "q\nThe Nasdaq Stock Market LLC"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.42336758971214294,
+          "mask_id": 246,
+          "bbox_px": [
+            279.92706298828125,
+            1578.033935546875,
+            538.5751953125,
+            1605.9058837890625
+          ],
+          "bbox_pdfium": [
+            98.77374267578125,
+            211.87388183593748,
+            195.8870703125,
+            225.90778320312506
+          ],
+          "bbox_plumber": [
+            98.77374267578125,
+            566.0922167968749,
+            195.8870703125,
+            580.1261181640625
+          ],
+          "zone_text": "3.600% Notes due 2042"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.7699143886566162,
+          "mask_id": 250,
+          "bbox_px": [
+            565.0232543945312,
+            1642.3638916015625,
+            1135.0919189453125,
+            1671.45458984375
+          ],
+          "bbox_pdfium": [
+            201.40837158203124,
+            188.27634765624998,
+            410.6330908203125,
+            202.74899902343748
+          ],
+          "bbox_plumber": [
+            201.40837158203124,
+            589.2510009765625,
+            410.6330908203125,
+            603.72365234375
+          ],
+          "zone_text": "Securities registered pursuant to Section 12(g) of the Act: None"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.821654736995697,
+          "mask_id": 251,
+          "bbox_px": [
+            44.2073860168457,
+            1715.2176513671875,
+            1094.6055908203125,
+            1742.1455078125
+          ],
+          "bbox_pdfium": [
+            13.914658966064453,
+            162.82761718749998,
+            396.05801269531247,
+            176.52164550781254
+          ],
+          "bbox_plumber": [
+            13.914658966064453,
+            615.4783544921875,
+            396.05801269531247,
+            629.1723828125
+          ],
+          "zone_text": "Indicate by check mark if the Registrant is a well-known seasoned issuer, as defined in Rule 405 of the Securities Act."
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.7635875344276428,
+          "mask_id": 254,
+          "bbox_px": [
+            768.0482177734375,
+            1749.7347412109375,
+            933.4285278320312,
+            1778.111328125
+          ],
+          "bbox_pdfium": [
+            274.4973583984375,
+            149.87992187500004,
+            338.0342700195312,
+            164.09549316406253
+          ],
+          "bbox_plumber": [
+            274.4973583984375,
+            627.9045068359375,
+            338.0342700195312,
+            642.120078125
+          ],
+          "zone_text": "Yes \u2612 No \u2610"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.8044390678405762,
+          "mask_id": 261,
+          "bbox_px": [
+            43.831661224365234,
+            1800.4439697265625,
+            1108.1046142578125,
+            1828.4647216796875
+          ],
+          "bbox_pdfium": [
+            13.779398040771484,
+            131.7527001953125,
+            400.9176611328125,
+            145.84017089843758
+          ],
+          "bbox_plumber": [
+            13.779398040771484,
+            646.1598291015624,
+            400.9176611328125,
+            660.2472998046875
+          ],
+          "zone_text": "Indicate by check mark if the Registrant is not required to file reports pursuant to Section 13 or Section 15(d) of the Act."
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.729682207107544,
+          "mask_id": 264,
+          "bbox_px": [
+            768.0189208984375,
+            1833.33251953125,
+            933.2024536132812,
+            1863.2366943359375
+          ],
+          "bbox_pdfium": [
+            274.4868115234375,
+            119.23479003906255,
+            337.95288330078125,
+            134.00029296875005
+          ],
+          "bbox_plumber": [
+            274.4868115234375,
+            657.99970703125,
+            337.95288330078125,
+            672.7652099609375
+          ],
+          "zone_text": "Yes \u2610 No \u2612"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.8948729038238525,
+          "mask_id": 267,
+          "bbox_px": [
+            44.5577278137207,
+            1914.4576416015625,
+            1657.437255859375,
+            1967.244873046875
+          ],
+          "bbox_pdfium": [
+            14.040782012939452,
+            81.79184570312498,
+            598.6774121093749,
+            104.79524902343758
+          ],
+          "bbox_plumber": [
+            14.040782012939452,
+            687.2047509765624,
+            598.6774121093749,
+            710.208154296875
+          ],
+          "zone_text": "Indicate by check mark whether the Registrant (1) has filed all reports required to be filed by Section 13 or 15(d) of the Securities Exchange Act of 1934 during the preceding 12\nmonths (or for such shorter period that the Registrant was required to file such reports), and (2) has been subject to such filing requirements for the past 90 days."
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.731667160987854,
+          "mask_id": 271,
+          "bbox_px": [
+            767.8274536132812,
+            1973.003173828125,
+            932.0810546875,
+            2001.0638427734375
+          ],
+          "bbox_pdfium": [
+            274.4178833007812,
+            69.61701660156257,
+            337.5491796875,
+            83.71885742187499
+          ],
+          "bbox_plumber": [
+            274.4178833007812,
+            708.281142578125,
+            337.5491796875,
+            722.3829833984374
+          ],
+          "zone_text": "Yes \u2612 No \u2610"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.8082470893859863,
+          "mask_id": 276,
+          "bbox_px": [
+            44.17333984375,
+            2024.188232421875,
+            1657.353515625,
+            2073.50830078125
+          ],
+          "bbox_pdfium": [
+            13.90240234375,
+            43.53701171875002,
+            598.6472656249999,
+            65.292236328125
+          ],
+          "bbox_plumber": [
+            13.90240234375,
+            726.707763671875,
+            598.6472656249999,
+            748.46298828125
+          ],
+          "zone_text": "Indicate by check mark whether the Registrant has submitted electronically every Interactive Data File required to be submitted pursuant to Rule 405 of Regulation S-T (\u00a7232.405 of\nthis chapter) during the preceding 12 months (or for such shorter period that the Registrant was required to submit such files)."
+        },
+        {
+          "type": "number",
+          "label_id": 16,
+          "score": 0.3965361416339874,
+          "mask_id": 294,
+          "bbox_px": [
+            770.0813598632812,
+            2081.308837890625,
+            930.5209350585938,
+            2106.919677734375
+          ],
+          "bbox_pdfium": [
+            275.22928955078123,
+            31.508916015625005,
+            336.98753662109374,
+            44.728818359375055
+          ],
+          "bbox_plumber": [
+            275.22928955078123,
+            747.271181640625,
+            336.98753662109374,
+            760.491083984375
+          ],
+          "zone_text": "Yes \u2612 No \u2610"
+        },
+        {
+          "type": "number",
+          "label_id": 16,
+          "score": 0.29171618819236755,
+          "mask_id": 280,
+          "bbox_px": [
+            769.834228515625,
+            2081.55712890625,
+            842.826416015625,
+            2106.26513671875
+          ],
+          "bbox_pdfium": [
+            275.140322265625,
+            31.74455078125004,
+            305.41750976562497,
+            44.63943359375003
+          ],
+          "bbox_plumber": [
+            275.140322265625,
+            747.36056640625,
+            305.41750976562497,
+            760.25544921875
+          ],
+          "zone_text": "Yes \u2612"
+        }
+      ],
+      "tier1_bboxes": [],
+      "spotlight_bboxes": [
+        [
+          290.0465942382812,
+          497.9287744140625,
+          321.544560546875,
+          533.63333984375
+        ]
+      ],
+      "tables": [
+        {
+          "table_id": "borderless_0_17",
+          "source": "tatr_explicit_pdfplumber",
+          "bbox_px": [
+            141.6360321044922,
+            1304.3121337890625,
+            1484.099365234375,
+            1611.4114990234375
+          ],
+          "bbox_pdfium": [
+            48.988971557617184,
+            209.8918603515625,
+            536.275771484375,
+            324.4476318359375
+          ],
+          "bbox_plumber": [
+            48.988971557617184,
+            467.5523681640625,
+            536.275771484375,
+            582.1081396484375
+          ],
+          "rows": [
+            [
+              "Title of each class",
+              "Trading symbol(s)",
+              "Name of each exchange on which registered"
+            ],
+            [
+              "Common Stock, $0.00001 par value per share\n0.000% Notes due 2025",
+              "AAPL\n\u2014",
+              "The Nasdaq Stock Market LLC\nThe Nasdaq Stock Market LLC"
+            ],
+            [
+              "0.875% Notes due 2025",
+              "\u2014",
+              "The Nasdaq Stock Market LLC"
+            ],
+            [
+              "1.625% Notes due 2026",
+              "\u2014",
+              "The Nasdaq Stock Market LLC"
+            ],
+            [
+              "2.000% Notes due 2027",
+              "\u2014",
+              "The Nasdaq Stock Market LLC"
+            ],
+            [
+              "1.375% Notes due 2029",
+              "\u2014",
+              "The Nasdaq Stock Market LLC"
+            ],
+            [
+              "3.050% Notes due 2029",
+              "\u2014",
+              "The Nasdaq Stock Market LLC"
+            ],
+            [
+              "0.500% Notes due 2031",
+              "\u2014",
+              "The Nasdaq Stock Market LLC"
+            ],
+            [
+              "3.600% Notes due 2042",
+              "\u2014",
+              "The Nasdaq Stock Market LLC"
+            ]
+          ],
+          "confidence": 0.8609359306948525,
+          "warnings": []
+        }
+      ],
+      "metadata": {
+        "ocr_probe_len": 2426,
+        "ocr_reason": "clean",
+        "timings_ms": {
+          "page_open": 2.616699999634875,
+          "probe_text": 3.217399997083703,
+          "ocr_classify": 0.11109999832115136,
+          "detect_table_fast": 5.469499999890104,
+          "render": 30.63990000009653,
+          "doclayout": 806.7359999986365,
+          "zone_postprocess": 0.12559999959194101,
+          "digital_page_total": 510.9195999975782,
+          "page_total": 1360.435900001903
+        }
+      },
+      "layout_grade": "FAIR",
+      "page_class": "mixed"
+    },
+    {
+      "page_num": 1,
+      "is_tagged": false,
+      "needs_ocr": false,
+      "ocr_reason": "clean",
+      "final_text": "Indicate by check mark whether the Registrant is a large accelerated filer, an accelerated filer, a non-accelerated filer, a smaller reporting company, or an emerging growth company.\nSee the definitions of \u201clarge accelerated filer,\u201d \u201caccelerated filer,\u201d \u201csmaller reporting company,\u201d and \u201cemerging growth company\u201d in Rule 12b-2 of the Exchange Act.\nAccelerated filer \u2610\nLarge accelerated filer \u2612\nSmaller reporting company \u2610\nNon-accelerated filer \u2610\nEmerging growth company \u2610\nIf an emerging growth company, indicate by check mark if the Registrant has elected not to use the extended transition period for complying with any new or revised financial\naccounting standards provided pursuant to Section 13(a) of the Exchange Act. \u2610\nIndicate by check mark whether the Registrant has filed a report on and attestation to its management\u2019s assessment of the effectiveness of its internal control over financial reporting\nunder Section 404(b) of the Sarbanes-Oxley Act (15 U.S.C. 7262(b)) by the registered public accounting firm that prepared or issued its audit report. \u2612\nIf securities are registered pursuant to Section 12(b) of the Act, indicate by check mark whether the financial statements of the registrant included in the filing reflect the correction of\nan error to previously issued financial statements. \u2610\nIndicate by check mark whether any of those error corrections are restatements that required a recovery analysis of incentive-based compensation received by any of the registrant\u2019s\nexecutive officers during the relevant recovery period pursuant to \u00a7240.10D-1(b). \u2610\nIndicate by check mark whether the Registrant is a shell company (as defined in Rule 12b-2 of the Act).\nYes \u2610 No \u2612\nThe aggregate market value of the voting and non-voting stock held by non-affiliates of the Registrant, as of March 29, 2024, the last business day of the Registrant\u2019s most recently\ncompleted second fiscal quarter, was approximately $2,628,553,000,000. Solely for purposes of this disclosure, shares of common stock held by executive officers and directors of\nthe Registrant as of such date have been excluded because such persons may be deemed to be affiliates. This determination of executive officers and directors as affiliates is not\nnecessarily a conclusive determination for any other purposes.\n15,115,823,000 shares of common stock were issued and outstanding as of October 18, 2024.\nDOCUMENTS INCORPORATED BY REFERENCE\nPortions of the Registrant\u2019s definitive proxy statement relating to its 2025 annual meeting of shareholders are incorporated by reference into Part III of this Annual Report on Form\n10-K where indicated. The Registrant\u2019s definitive proxy statement will be filed with the U.S. Securities and Exchange Commission within 120 days after the end of the fiscal year to\nwhich this report relates.",
+      "page_width": 612.0,
+      "page_height": 792.0,
+      "effective_page_width_pt": 612.0,
+      "effective_page_height_pt": 792.0,
+      "image": null,
+      "img_np": null,
+      "has_bordered_table": false,
+      "zones": [
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.8854430913925171,
+          "mask_id": 10,
+          "bbox_px": [
+            43.50259780883789,
+            48.77070617675781,
+            1655.1583251953125,
+            101.33602142333984
+          ],
+          "bbox_pdfium": [
+            13.66093521118164,
+            753.5190322875976,
+            597.8569970703124,
+            776.4425457763672
+          ],
+          "bbox_plumber": [
+            13.66093521118164,
+            15.557454223632813,
+            597.8569970703124,
+            38.48096771240234
+          ],
+          "zone_text": "Indicate by check mark whether the Registrant is a large accelerated filer, an accelerated filer, a non-accelerated filer, a smaller reporting company, or an emerging growth company.\nSee the definitions of \u201clarge accelerated filer,\u201d \u201caccelerated filer,\u201d \u201csmaller reporting company,\u201d and \u201cemerging growth company\u201d in Rule 12b-2 of the Exchange Act."
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.758018970489502,
+          "mask_id": 78,
+          "bbox_px": [
+            1195.3438720703125,
+            121.46067810058594,
+            1628.51416015625,
+            148.60292053222656
+          ],
+          "bbox_pdfium": [
+            428.3237939453125,
+            736.5029486083985,
+            588.26509765625,
+            750.274155883789
+          ],
+          "bbox_plumber": [
+            428.3237939453125,
+            41.725844116210936,
+            588.26509765625,
+            55.49705139160156
+          ],
+          "zone_text": "Accelerated filer \u2610"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.767266035079956,
+          "mask_id": 69,
+          "bbox_px": [
+            46.01008605957031,
+            121.611083984375,
+            424.6627502441406,
+            149.06240844726562
+          ],
+          "bbox_pdfium": [
+            14.56363098144531,
+            736.3375329589844,
+            154.87859008789061,
+            750.220009765625
+          ],
+          "bbox_plumber": [
+            14.56363098144531,
+            41.779990234375,
+            154.87859008789061,
+            55.662467041015624
+          ],
+          "zone_text": "Large accelerated filer \u2612"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.757121205329895,
+          "mask_id": 116,
+          "bbox_px": [
+            1196.2880859375,
+            154.28775024414062,
+            1629.672119140625,
+            181.50094604492188
+          ],
+          "bbox_pdfium": [
+            428.66371093749996,
+            724.6596594238281,
+            588.681962890625,
+            738.4564099121094
+          ],
+          "bbox_plumber": [
+            428.66371093749996,
+            53.54359008789062,
+            588.681962890625,
+            67.34034057617187
+          ],
+          "zone_text": "Smaller reporting company \u2610"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.7166570425033569,
+          "mask_id": 114,
+          "bbox_px": [
+            46.18505096435547,
+            154.57029724121094,
+            424.2381286621094,
+            180.59906005859375
+          ],
+          "bbox_pdfium": [
+            14.62661834716797,
+            724.9843383789063,
+            154.72572631835936,
+            738.354692993164
+          ],
+          "bbox_plumber": [
+            14.62661834716797,
+            53.645307006835935,
+            154.72572631835936,
+            67.01566162109374
+          ],
+          "zone_text": "Non-accelerated filer \u2610"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.7530783414840698,
+          "mask_id": 154,
+          "bbox_px": [
+            1196.291748046875,
+            187.04296875,
+            1629.988525390625,
+            215.03363037109375
+          ],
+          "bbox_pdfium": [
+            428.665029296875,
+            712.5878930664062,
+            588.795869140625,
+            726.66453125
+          ],
+          "bbox_plumber": [
+            428.665029296875,
+            65.33546875,
+            588.795869140625,
+            79.41210693359375
+          ],
+          "zone_text": "Emerging growth company \u2610"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.9083335399627686,
+          "mask_id": 160,
+          "bbox_px": [
+            43.799339294433594,
+            244.52828979492188,
+            1655.237548828125,
+            301.4877014160156
+          ],
+          "bbox_pdfium": [
+            13.767762145996093,
+            681.4644274902344,
+            597.885517578125,
+            705.9698156738282
+          ],
+          "bbox_plumber": [
+            13.767762145996093,
+            86.03018432617188,
+            597.885517578125,
+            110.53557250976561
+          ],
+          "zone_text": "If an emerging growth company, indicate by check mark if the Registrant has elected not to use the extended transition period for complying with any new or revised financial\naccounting standards provided pursuant to Section 13(a) of the Exchange Act. \u2610"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.9053071737289429,
+          "mask_id": 168,
+          "bbox_px": [
+            43.94676971435547,
+            321.71624755859375,
+            1655.78173828125,
+            375.98907470703125
+          ],
+          "bbox_pdfium": [
+            13.820837097167969,
+            654.6439331054687,
+            598.08142578125,
+            678.1821508789062
+          ],
+          "bbox_plumber": [
+            13.820837097167969,
+            113.81784912109374,
+            598.08142578125,
+            137.35606689453124
+          ],
+          "zone_text": "Indicate by check mark whether the Registrant has filed a report on and attestation to its management\u2019s assessment of the effectiveness of its internal control over financial reporting\nunder Section 404(b) of the Sarbanes-Oxley Act (15 U.S.C. 7262(b)) by the registered public accounting firm that prepared or issued its audit report. \u2612"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.8993068933486938,
+          "mask_id": 187,
+          "bbox_px": [
+            44.23297119140625,
+            396.6707458496094,
+            1656.3692626953125,
+            451.3482360839844
+          ],
+          "bbox_pdfium": [
+            13.92386962890625,
+            627.5146350097657,
+            598.2929345703125,
+            651.1985314941406
+          ],
+          "bbox_plumber": [
+            13.92386962890625,
+            140.80146850585936,
+            598.2929345703125,
+            164.48536499023436
+          ],
+          "zone_text": "If securities are registered pursuant to Section 12(b) of the Act, indicate by check mark whether the financial statements of the registrant included in the filing reflect the correction of\nan error to previously issued financial statements. \u2610"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.9029205441474915,
+          "mask_id": 210,
+          "bbox_px": [
+            43.64359664916992,
+            473.2015686035156,
+            1654.961181640625,
+            528.1085205078125
+          ],
+          "bbox_pdfium": [
+            13.711694793701172,
+            599.8809326171875,
+            597.786025390625,
+            623.6474353027344
+          ],
+          "bbox_plumber": [
+            13.711694793701172,
+            168.35256469726562,
+            597.786025390625,
+            192.1190673828125
+          ],
+          "zone_text": "Indicate by check mark whether any of those error corrections are restatements that required a recovery analysis of incentive-based compensation received by any of the registrant\u2019s\nexecutive officers during the relevant recovery period pursuant to \u00a7240.10D-1(b). \u2610"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.8109657168388367,
+          "mask_id": 221,
+          "bbox_px": [
+            43.48309326171875,
+            551.1367797851562,
+            962.14404296875,
+            576.6093139648438
+          ],
+          "bbox_pdfium": [
+            13.65391357421875,
+            582.4206469726563,
+            348.37185546874997,
+            595.5907592773438
+          ],
+          "bbox_plumber": [
+            13.65391357421875,
+            196.40924072265625,
+            348.37185546874997,
+            209.57935302734373
+          ],
+          "zone_text": "Indicate by check mark whether the Registrant is a shell company (as defined in Rule 12b-2 of the Act)."
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.7556936740875244,
+          "mask_id": 234,
+          "bbox_px": [
+            769.376953125,
+            585.504150390625,
+            930.891357421875,
+            610.8423461914062
+          ],
+          "bbox_pdfium": [
+            274.975703125,
+            570.0967553710938,
+            337.120888671875,
+            583.218505859375
+          ],
+          "bbox_plumber": [
+            274.975703125,
+            208.781494140625,
+            337.120888671875,
+            221.90324462890624
+          ],
+          "zone_text": "Yes \u2610 No \u2612"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.9324703216552734,
+          "mask_id": 240,
+          "bbox_px": [
+            43.39438247680664,
+            635.3929443359375,
+            1657.568603515625,
+            734.226806640625
+          ],
+          "bbox_pdfium": [
+            13.62197769165039,
+            525.678349609375,
+            598.724697265625,
+            565.2585400390625
+          ],
+          "bbox_plumber": [
+            13.62197769165039,
+            226.7414599609375,
+            598.724697265625,
+            266.321650390625
+          ],
+          "zone_text": "The aggregate market value of the voting and non-voting stock held by non-affiliates of the Registrant, as of March 29, 2024, the last business day of the Registrant\u2019s most recently\ncompleted second fiscal quarter, was approximately $2,628,553,000,000. Solely for purposes of this disclosure, shares of common stock held by executive officers and directors of\nthe Registrant as of such date have been excluded because such persons may be deemed to be affiliates. This determination of executive officers and directors as affiliates is not\nnecessarily a conclusive determination for any other purposes."
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.8361232876777649,
+          "mask_id": 249,
+          "bbox_px": [
+            428.2158508300781,
+            753.9149169921875,
+            1271.0078125,
+            779.6658325195312
+          ],
+          "bbox_pdfium": [
+            152.15770629882812,
+            509.32030029296874,
+            459.5628125,
+            522.5906298828124
+          ],
+          "bbox_plumber": [
+            152.15770629882812,
+            269.4093701171875,
+            459.5628125,
+            282.67969970703126
+          ],
+          "zone_text": "15,115,823,000 shares of common stock were issued and outstanding as of October 18, 2024."
+        },
+        {
+          "type": "paragraph_title",
+          "label_id": 17,
+          "score": 0.8507071733474731,
+          "mask_id": 260,
+          "bbox_px": [
+            587.0675659179688,
+            814.3052368164062,
+            1111.16259765625,
+            840.9934692382812
+          ],
+          "bbox_pdfium": [
+            209.34432373046874,
+            487.2423510742188,
+            402.01853515625,
+            500.85011474609377
+          ],
+          "bbox_plumber": [
+            209.34432373046874,
+            291.14988525390623,
+            402.01853515625,
+            304.7576489257812
+          ],
+          "zone_text": "DOCUMENTS INCORPORATED BY REFERENCE"
+        },
+        {
+          "type": "text",
+          "label_id": 22,
+          "score": 0.9193403720855713,
+          "mask_id": 269,
+          "bbox_px": [
+            43.52266311645508,
+            848.5191650390625,
+            1656.965087890625,
+            924.329345703125
+          ],
+          "bbox_pdfium": [
+            13.668158721923827,
+            457.24143554687504,
+            598.507431640625,
+            488.5331005859375
+          ],
+          "bbox_plumber": [
+            13.668158721923827,
+            303.4668994140625,
+            598.507431640625,
+            334.75856445312496
+          ],
+          "zone_text": "Portions of the Registrant\u2019s definitive proxy statement relating to its 2025 annual meeting of shareholders are incorporated by reference into Part III of this Annual Report on Form\n10-K where indicated. The Registrant\u2019s definitive proxy statement will be filed with the U.S. Securities and Exchange Commission within 120 days after the end of the fiscal year to\nwhich this report relates."
+        }
+      ],
+      "tier1_bboxes": [],
+      "spotlight_bboxes": [],
+      "tables": [],
+      "metadata": {
+        "ocr_probe_len": 2826,
+        "ocr_reason": "clean",
+        "timings_ms": {
+          "page_open": 3.4822999987227377,
+          "probe_text": 2.674700001080055,
+          "ocr_classify": 0.13840000247000717,
+          "detect_table_fast": 8.518899998307461,
+          "render": 30.60910000203876,
+          "doclayout": 845.3421000012895,
+          "zone_postprocess": 0.09850000060396269,
+          "digital_page_total": 9.427799999684794,
+          "page_total": 901.0554999986198
+        }
+      },
+      "layout_grade": "EXCELLENT",
+      "page_class": "text_only"
+    }
+  ]
+}
