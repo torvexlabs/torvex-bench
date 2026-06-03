@@ -1,3 +1,38 @@
+"""
+FinTabNet dataset loader and materializer.
+
+This module prepares the FinTabNet OTSL test split for benchmark runs.
+FinTabNet provides table-crop images with table-structure ground truth
+(HTML, restored HTML, OTSL, row count, and column count), not full-page PDFs.
+
+Because benchmark adapters consume PDF inputs, each table-crop image is
+materialized as a one-page image-only PDF.
+
+Generated local artifacts:
+    data/fintabnet/test/images/
+    data/fintabnet/test/pdfs/
+    data/fintabnet/test/manifest.jsonl
+
+Committed reproducibility artifact:
+    results/manifests/fintabnet_test_full.jsonl
+
+The committed manifest locks official dataset row order and lightweight
+sample metadata. The local runtime manifest contains generated PDF paths and
+ground-truth table data required by the runner and scorer.
+
+###fintabnet.py is the dataset-side loader/materializer.
+
+It takes official FinTabNet raw parquet files and turns them into benchmark-ready local files:
+images, PDFs, and runtime manifest.
+
+It normalizes ground-truth fields like HTML, OTSL, rows, cols, and span metadata.
+
+It converts FinTabNet table-crop images into one-page PDFs because our adapters expect PDFs.
+
+It also creates a small public manifest that locks the official test sample order for reproducibility.
+
+"""
+
 from __future__ import annotations
 
 import json
@@ -148,7 +183,7 @@ def normalize_html(value: Any) -> str:
         return ""
 
     if isinstance(value, list):
-        return "".join(str(item).strip() for item in value if str(item).strip())
+        return "".join(str(item) for item in value if str(item))
 
     return str(value).strip()
 
@@ -419,10 +454,16 @@ def save_manifest(
     manifest_path: str | Path,
 ) -> None:
     """
-    Save materialized FinTabNet samples as a JSONL manifest.
+    Save the local runtime FinTabNet manifest.
 
-    The manifest is small and reproducible.
-    It can be committed to GitHub.
+    This manifest contains generated local image/PDF paths and ground-truth
+    table data required by runner.py and the scorer.
+
+    Expected default location:
+        data/fintabnet/test/manifest.jsonl
+
+    This file is a generated local artifact and should remain gitignored.
+    The committed reproducibility manifest is written by save_public_manifest().
     """
     manifest_path = Path(manifest_path)
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
@@ -527,6 +568,7 @@ def materialize_fintabnet_dataset(
     limit: int | None = None,
     manifest_path: str | Path | None = None,
     public_manifest_path: str | Path | None = None,
+    allow_partial_public_manifest: bool = False,
 ) -> list[FinTabNetSample]:
     """
     One-shot materialization helper.
@@ -534,11 +576,28 @@ def materialize_fintabnet_dataset(
     Raw parquet files
         -> PNG files
         -> PDF files
-        -> manifest.jsonl
+        -> local runtime manifest
+        -> optional public reproducibility manifest
         -> list[FinTabNetSample]
 
     Use this during setup/dev, not every benchmark run.
+
+    Safety:
+        public_manifest_path should normally be used only for the full test split.
+        Passing limit together with public_manifest_path is blocked by default so
+        a dev run cannot accidentally overwrite the committed full manifest.
     """
+    if (
+        public_manifest_path is not None
+        and limit is not None
+        and not allow_partial_public_manifest
+    ):
+        raise ValueError(
+            "Refusing to write a public FinTabNet manifest from a limited run. "
+            "Use limit=None for the full manifest, or pass "
+            "allow_partial_public_manifest=True for an explicitly named dev manifest."
+        )
+
     samples = iter_materialized_fintabnet_samples(
         raw_data_dir=raw_data_dir,
         split=split,

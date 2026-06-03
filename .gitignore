@@ -29,3 +29,6 @@ data/cache/
 !results/
 !results/manifests/
 !results/manifests/*.jsonl
+
+# Local-only 
+scripts/build_benchmark_code_review_bundle.py

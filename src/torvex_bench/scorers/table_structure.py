@@ -1,3 +1,33 @@
+"""
+FinTabNet table-structure scorer.
+
+This module scores predicted table structures against FinTabNet ground truth.
+
+Ground truth is provided as HTML/restored HTML. Predictions are taken from
+adapter `DocumentResult` tables and converted from row lists to HTML before
+scoring.
+
+Metrics:
+    TEDS        - table structure and cell text similarity
+    TEDS-Struct - table structure similarity only
+
+The implementation uses docling-eval's TEDScorer backend:
+    docling_eval.evaluators.table.teds.TEDScorer
+
+This module does not perform extraction. It only evaluates extracted tables.
+
+table_structure.py is the FinTabNet table scorer.
+
+It compares the engine's predicted table output against FinTabNet ground-truth HTML.
+
+It does not invent a custom metric; it wraps docling-eval's TEDScorer so our benchmark can feed Torvex/Docling/PPStructure outputs into the same metric.
+
+It reports TEDS as the primary metric and TEDS-Struct as the structure-only secondary metric.
+
+It does not extract tables. It only scores tables already extracted by the adapter.
+
+"""
+
 from __future__ import annotations
 
 import json
@@ -10,6 +40,8 @@ from docling_eval.evaluators.table.teds import TEDScorer
 from lxml import html
 
 
+# TableStructureScore stores one sample's result.
+# TableStructureSummary stores aggregate run-level results.
 @dataclass(frozen=True)
 class TableStructureScore:
     """
@@ -50,6 +82,9 @@ class TableStructureSummary:
         return asdict(self)
 
 
+# Adapters return table rows as Python lists.
+# TEDS expects HTML table trees.
+# These helpers convert predicted rows into simple HTML.
 def rows_to_html(rows: list[list[Any]]) -> str:
     """
     Convert predicted table rows into simple table HTML.
@@ -99,6 +134,10 @@ def normalize_table_html(value: Any) -> str:
     return table_html
 
 
+# This is the real metric path.
+# It uses docling-eval TEDScorer for both:
+#   - TEDS: structure + text
+#   - TEDS-Struct: structure only
 def score_table_html(
     *,
     gt_html: str,
@@ -142,6 +181,8 @@ def score_table_html(
     return round(float(teds), 3), round(float(teds_struct), 3)
 
 
+# These helpers pull tables out of DocumentResult-like objects.
+# They support both dataclass/object style and dictionary style outputs.
 def extract_predicted_tables(document_result: Any) -> list[Any]:
     """
     Extract all tables from a DocumentResult-like object.
@@ -193,6 +234,8 @@ def table_rows(table: Any) -> list[list[Any]]:
     return clean_rows
 
 
+# This is the main function runner.py will call.
+# It takes one FinTabNetSample and one extraction result, then returns TEDS scores.
 def score_fintabnet_sample(
     *,
     sample: Any,
@@ -282,6 +325,7 @@ def score_fintabnet_sample(
     )
 
 
+# These helpers summarize all per-sample scores into benchmark-level numbers.
 def summarize_table_structure_scores(
     scores: list[TableStructureScore],
 ) -> TableStructureSummary:
@@ -330,6 +374,7 @@ def save_table_structure_scores_jsonl(
             f.write(json.dumps(score.to_dict(), ensure_ascii=False) + "\n")
 
 
+# Small helpers used only inside this scorer.
 def _table_cell_count(table: Any) -> int:
     rows = table_rows(table)
     return sum(len(row or []) for row in rows)
