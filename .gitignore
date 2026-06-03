@@ -24,3 +24,8 @@ results/smoke/
 data/fintabnet/
 data/hf_raw/
 data/cache/
+
+# Keep public benchmark manifests committed
+!results/
+!results/manifests/
+!results/manifests/*.jsonl

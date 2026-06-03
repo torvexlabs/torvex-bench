@@ -526,6 +526,7 @@ def materialize_fintabnet_dataset(
     output_dir: str | Path = DEFAULT_OUTPUT_DIR,
     limit: int | None = None,
     manifest_path: str | Path | None = None,
+    public_manifest_path: str | Path | None = None,
 ) -> list[FinTabNetSample]:
     """
     One-shot materialization helper.
@@ -556,4 +557,48 @@ def materialize_fintabnet_dataset(
         manifest_path=manifest_path,
     )
 
+    if public_manifest_path is not None:
+        save_public_manifest(
+            samples=samples,
+            manifest_path=public_manifest_path,
+        )
+
     return samples
+
+
+def save_public_manifest(
+    samples: list[FinTabNetSample],
+    manifest_path: str | Path,
+) -> None:
+    """
+    Save a small reproducibility manifest suitable for GitHub.
+
+    This manifest identifies the official dataset rows and locked order.
+    It intentionally does NOT include:
+    - local image paths
+    - local PDF paths
+    - ground-truth HTML
+    - ground-truth OTSL
+
+    The full local runtime manifest remains under data/fintabnet/ and is gitignored.
+    """
+    manifest_path = Path(manifest_path)
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with manifest_path.open("w", encoding="utf-8") as f:
+        for rank, sample in enumerate(samples):
+            record = {
+                "rank": rank,
+                "dataset_slug": DATASET_SLUG,
+                "split": sample.split,
+                "source_index": sample.source_index,
+                "sample_id": sample.sample_id,
+                "rows": sample.rows,
+                "cols": sample.cols,
+                "has_spans": sample.has_spans,
+                "source_format": "table_crop_image",
+                "adapter_input": "image_to_pdf",
+                "is_full_page_document": False,
+            }
+
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
