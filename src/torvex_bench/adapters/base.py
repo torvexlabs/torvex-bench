@@ -46,3 +46,11 @@ class ExtractionAdapter(ABC):
             Do not call the extractor page-by-page.
         """
         raise NotImplementedError
+
+    # FIX: extract() alias lives on the ABC so every adapter exposes it.
+    # Previously only TorvexExtractAdapter had this method — calling .extract()
+    # on the Docling or PPStructure adapters would AttributeError at runtime
+    # when runner.py loops over adapters generically.
+    def extract(self, pdf_path: str) -> DocumentResult:
+        """Convenience alias for extract_document(). Do not override."""
+        return self.extract_document(pdf_path)

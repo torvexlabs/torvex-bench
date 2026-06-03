@@ -7,7 +7,7 @@ name = "torvex-bench"
 version = "0.1.0"
 description = "Reproducible benchmark harness for Torvex Extract, Docling, and PPStructureV3."
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [
   { name = "Torvex Labs" }
@@ -53,7 +53,8 @@ packages = ["src/torvex_bench"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py312"
+# FIX: was py312 — must match requires-python = ">=3.11"
+target-version = "py311"
 
 [tool.uv.sources]
 torvex-extract = { path = "../torvex-extract", editable = true }

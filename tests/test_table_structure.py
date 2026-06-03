@@ -135,7 +135,8 @@ def test_summarize_table_structure_scores() -> None:
     summary = summarize_table_structure_scores(scores)
 
     assert summary.samples_total == 2
-    assert summary.samples_scored == 1
+    # FIX: was samples_scored — renamed to samples_error_free
+    assert summary.samples_error_free == 1
     assert summary.mean_teds == 0.5
     assert summary.mean_teds_struct == 0.5
     assert summary.missing_table_count == 1

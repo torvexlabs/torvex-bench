@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from PIL import Image
@@ -91,6 +92,39 @@ def test_materialize_fintabnet_sample_creates_png_pdf_and_sample(tmp_path: Path)
 
     assert sample.image_path.suffix == ".png"
     assert sample.pdf_path.suffix == ".pdf"
+
+
+def test_to_manifest_record_is_json_serializable(tmp_path: Path) -> None:
+    """
+    FIX: to_manifest_record() previously used asdict() which leaves Path objects
+    in the dict. json.dumps would then fail or produce garbage. This test
+    proves the record is fully JSON-serializable with no custom encoder.
+    """
+    sample = FinTabNetSample(
+        sample_id="sample_json_test",
+        source_index=0,
+        split="test",
+        pdf_path=tmp_path / "sample.pdf",
+        image_path=tmp_path / "sample.png",
+        gt_html="<tr><td>A</td></tr>",
+        gt_html_restored="<tr><td>A</td></tr>",
+        gt_otsl="fcel nl",
+        rows=1,
+        cols=1,
+        has_spans=False,
+        metadata={"dataset_slug": "docling-project/FinTabNet_OTSL"},
+    )
+
+    record = sample.to_manifest_record()
+
+    # Must not raise — no Path objects, no non-serializable types
+    serialized = json.dumps(record)
+    round_tripped = json.loads(serialized)
+
+    assert round_tripped["pdf_path"] == str(tmp_path / "sample.pdf")
+    assert round_tripped["image_path"] == str(tmp_path / "sample.png")
+    assert isinstance(round_tripped["pdf_path"], str)
+    assert isinstance(round_tripped["image_path"], str)
 
 
 def test_save_and_load_manifest_with_limit(tmp_path: Path) -> None:

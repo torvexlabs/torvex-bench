@@ -20,7 +20,7 @@ The committed manifest locks official dataset row order and lightweight
 sample metadata. The local runtime manifest contains generated PDF paths and
 ground-truth table data required by the runner and scorer.
 
-###fintabnet.py is the dataset-side loader/materializer.
+fintabnet.py is the dataset-side loader/materializer.
 
 It takes official FinTabNet raw parquet files and turns them into benchmark-ready local files:
 images, PDFs, and runtime manifest.
@@ -35,9 +35,10 @@ It also creates a small public manifest that locks the official test sample orde
 
 from __future__ import annotations
 
+import os
 import json
 import hashlib
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -45,8 +46,13 @@ from typing import Any
 DATASET_SLUG = "docling-project/FinTabNet_OTSL"
 DEFAULT_SPLIT = "test"
 
-# Where you downloaded the raw HuggingFace test parquet files.
-DEFAULT_RAW_DATA_DIR = Path("C:/datasets/fintabnet_otsl_raw")
+# FIX: was Path("C:/datasets/fintabnet_otsl_raw") — a Windows absolute path that
+# resolves as a relative path on Linux (Kaggle/RunPod), causing a confusing
+# FileNotFoundError on cloud runs. Now a cross-platform relative path.
+# Override at call sites or via the FINTABNET_RAW_DIR env var if needed.
+DEFAULT_RAW_DATA_DIR = Path(
+    os.getenv("FINTABNET_RAW_DIR", "data/fintabnet_raw")
+)
 
 # Where our benchmark will create clean local images, PDFs, and manifest.
 DEFAULT_OUTPUT_DIR = Path("data/fintabnet")
@@ -85,11 +91,26 @@ class FinTabNetSample:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_manifest_record(self) -> dict[str, Any]:
-        record = asdict(self)
-        record["pdf_path"] = str(self.pdf_path)
-        record["image_path"] = str(self.image_path)
-        return record
-    
+        # FIX: was asdict(self) which leaves Path fields as Path objects (not
+        # JSON-serializable). The explicit str() overwrites only fixed pdf_path
+        # and image_path but any future Path field would silently break
+        # json.dumps. Now all fields are serialized explicitly so adding a new
+        # Path field cannot create a silent serialization bug.
+        return {
+            "sample_id": self.sample_id,
+            "source_index": self.source_index,
+            "split": self.split,
+            "pdf_path": str(self.pdf_path),
+            "image_path": str(self.image_path),
+            "gt_html": self.gt_html,
+            "gt_html_restored": self.gt_html_restored,
+            "gt_otsl": self.gt_otsl,
+            "rows": self.rows,
+            "cols": self.cols,
+            "has_spans": self.has_spans,
+            "metadata": self.metadata,
+        }
+
 
 def find_test_parquet_files(
     raw_data_dir: str | Path = DEFAULT_RAW_DATA_DIR,
@@ -97,8 +118,11 @@ def find_test_parquet_files(
     """
     Find the downloaded FinTabNet OTSL test parquet files.
 
-    Expected raw folder:
-        C:/datasets/fintabnet_otsl_raw/data/test-*.parquet
+    Expected raw folder layout:
+        <raw_data_dir>/data/test-*.parquet
+
+    Default raw_data_dir is data/fintabnet_raw (cross-platform relative path).
+    Override with the raw_data_dir argument or set FINTABNET_RAW_DIR env var.
     """
     raw_data_dir = Path(raw_data_dir)
     data_dir = raw_data_dir / "data"
@@ -106,7 +130,8 @@ def find_test_parquet_files(
     if not data_dir.exists():
         raise FileNotFoundError(
             f"FinTabNet raw data folder not found: {data_dir}. "
-            "Expected downloaded parquet files under raw_data_dir/data/"
+            "Expected downloaded parquet files under raw_data_dir/data/. "
+            "Pass raw_data_dir=Path('/your/path') explicitly."
         )
 
     parquet_files = sorted(data_dir.glob("test-*.parquet"))
@@ -128,9 +153,7 @@ def load_raw_fintabnet_dataset(
     """
     Load local FinTabNet OTSL parquet files as a HuggingFace Dataset.
 
-    This reads from the raw parquet files downloaded outside the repo, for example:
-        C:/datasets/fintabnet_otsl_raw/data/test-*.parquet
-
+    This reads from the raw parquet files downloaded outside the repo.
     It does not download anything from HuggingFace.
     """
     if split != "test":
@@ -199,7 +222,7 @@ def safe_int(value: Any) -> int:
         return int(value)
     except Exception:
         return 0
-    
+
 
 def otsl_tokens(otsl: str) -> list[str]:
     """
@@ -332,7 +355,7 @@ def materialize_fintabnet_sample(
     source_index: int,
     split: str = DEFAULT_SPLIT,
     output_dir: str | Path = DEFAULT_OUTPUT_DIR,
-) -> FinTabNetSample:
+) -> "FinTabNetSample":
     """
     Convert one raw FinTabNet parquet row into a benchmark-ready sample.
 

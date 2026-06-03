@@ -15,17 +15,6 @@ The implementation uses docling-eval's TEDScorer backend:
     docling_eval.evaluators.table.teds.TEDScorer
 
 This module does not perform extraction. It only evaluates extracted tables.
-
-table_structure.py is the FinTabNet table scorer.
-
-It compares the engine's predicted table output against FinTabNet ground-truth HTML.
-
-It does not invent a custom metric; it wraps docling-eval's TEDScorer so our benchmark can feed Torvex/Docling/PPStructure outputs into the same metric.
-
-It reports TEDS as the primary metric and TEDS-Struct as the structure-only secondary metric.
-
-It does not extract tables. It only scores tables already extracted by the adapter.
-
 """
 
 from __future__ import annotations
@@ -38,6 +27,15 @@ from typing import Any
 
 from docling_eval.evaluators.table.teds import TEDScorer
 from lxml import html
+
+
+# FIX: TEDScorer instantiated once at module level, not per sample call.
+# Previously score_table_html() called TEDScorer() on every invocation.
+# At 1,000 FinTabNet samples that is 1,000 constructor calls. If TEDScorer
+# loads any model or compiles anything in __init__, the FinTabNet run timing
+# is inflated and latency numbers are wrong. Singleton is the correct pattern
+# for a stateless scorer that is called in a tight loop.
+_TEDS_SCORER = TEDScorer()
 
 
 # TableStructureScore stores one sample's result.
@@ -68,12 +66,23 @@ class TableStructureScore:
 class TableStructureSummary:
     """
     Aggregate table structure scores.
+
+    Averaging convention (intentional — do not change):
+        mean_teds and mean_teds_struct are computed over ALL samples,
+        including those with errors (which contribute 0.0). This penalises
+        pipelines that fail silently. samples_error_free is the count of
+        samples that scored without any error, reported separately for
+        diagnostic purposes but NOT used as the denominator for mean_teds.
+
+    FIX: field was previously named samples_scored which implied the mean
+    was computed only over scored samples. Renamed to samples_error_free to
+    make the convention unambiguous. The mean is always over samples_total.
     """
 
     samples_total: int
-    samples_scored: int
-    mean_teds: float
-    mean_teds_struct: float
+    samples_error_free: int    # FIX: was samples_scored — misleading name
+    mean_teds: float           # sum(teds) / samples_total — errors contribute 0.0
+    mean_teds_struct: float    # sum(teds_struct) / samples_total
     missing_table_count: int
     error_count: int
     backend: str = "docling_eval_teds"
@@ -135,7 +144,7 @@ def normalize_table_html(value: Any) -> str:
 
 
 # This is the real metric path.
-# It uses docling-eval TEDScorer for both:
+# It uses the module-level _TEDS_SCORER singleton for both:
 #   - TEDS: structure + text
 #   - TEDS-Struct: structure only
 def score_table_html(
@@ -149,7 +158,7 @@ def score_table_html(
     Returns:
         (TEDS, TEDS-Struct)
 
-    Uses docling-eval TEDScorer.
+    Uses the module-level TEDScorer singleton (not a new instance per call).
     """
     gt_html = normalize_table_html(gt_html)
     pred_html = normalize_table_html(pred_html)
@@ -157,22 +166,21 @@ def score_table_html(
     if not gt_html or not pred_html:
         return 0.0, 0.0
 
-    scorer = TEDScorer()
-
+    # Re-parse both trees before each scorer call because TEDScorer mutates
+    # td/th tags internally. Two separate parse calls is intentional.
     gt_tree = html.fromstring(gt_html)
     pred_tree = html.fromstring(pred_html)
 
-    teds = scorer(
+    teds = _TEDS_SCORER(
         gt_table=gt_tree,
         pred_table=pred_tree,
         structure_only=False,
     )
 
-    # Re-parse because TEDScorer mutates td/th tags internally.
     gt_tree_struct = html.fromstring(gt_html)
     pred_tree_struct = html.fromstring(pred_html)
 
-    teds_struct = scorer(
+    teds_struct = _TEDS_SCORER(
         gt_table=gt_tree_struct,
         pred_table=pred_tree_struct,
         structure_only=True,
@@ -331,22 +339,25 @@ def summarize_table_structure_scores(
 ) -> TableStructureSummary:
     """
     Aggregate per-sample table scores.
+
+    Mean is computed over ALL samples (errors contribute 0.0).
+    See TableStructureSummary docstring for the averaging convention.
     """
     if not scores:
         return TableStructureSummary(
             samples_total=0,
-            samples_scored=0,
+            samples_error_free=0,
             mean_teds=0.0,
             mean_teds_struct=0.0,
             missing_table_count=0,
             error_count=0,
         )
 
-    scored = [score for score in scores if score.error is None]
+    error_free = [score for score in scores if score.error is None]
 
     return TableStructureSummary(
         samples_total=len(scores),
-        samples_scored=len(scored),
+        samples_error_free=len(error_free),   # FIX: was samples_scored
         mean_teds=round(sum(score.teds for score in scores) / len(scores), 4),
         mean_teds_struct=round(
             sum(score.teds_struct for score in scores) / len(scores),

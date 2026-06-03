@@ -187,7 +187,6 @@ def convert_document(
     )
 
 
-
 class TorvexExtractAdapter(ExtractionAdapter):
     """
     Real Torvex Extract adapter.
@@ -232,5 +231,6 @@ class TorvexExtractAdapter(ExtractionAdapter):
 
         return convert_document(raw_output, pdf_path=str(pdf_path))
 
-    def extract(self, pdf_path: str | Path) -> DocumentResult:
-        return self.extract_document(pdf_path)
+    # FIX: extract() alias removed from here.
+    # It now lives on ExtractionAdapter (base.py) as a concrete method
+    # so all three adapters expose it symmetrically without duplication.
