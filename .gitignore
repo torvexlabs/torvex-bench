@@ -18,3 +18,9 @@ docs/
 
 # Local smoke outputs
 results/smoke/
+
+
+.hf_cache/
+data/fintabnet/
+data/hf_raw/
+data/cache/
