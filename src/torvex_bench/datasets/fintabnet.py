@@ -13,23 +13,26 @@ Generated local artifacts:
     data/fintabnet/test/pdfs/
     data/fintabnet/test/manifest.jsonl
 
-Committed reproducibility artifact:
-    results/manifests/fintabnet_test_full.jsonl
-
-The committed manifest locks official dataset row order and lightweight
-sample metadata. The local runtime manifest contains generated PDF paths and
-ground-truth table data required by the runner and scorer.
+No public manifest is committed to the repo.
+Reproducibility is guaranteed by:
+    - deterministic sample_id hash (sha1 of content)
+    - HF dataset commit hash saved in run summary JSON
+    - dataset slug + split locked in code
 
 fintabnet.py is the dataset-side loader/materializer.
 
-It takes official FinTabNet raw parquet files and turns them into benchmark-ready local files:
-images, PDFs, and runtime manifest.
+It takes official FinTabNet OTSL parquet files and turns them into
+benchmark-ready local files: images, PDFs, and runtime manifest.
 
-It normalizes ground-truth fields like HTML, OTSL, rows, cols, and span metadata.
+It normalizes ground-truth fields like HTML, OTSL, rows, cols, span metadata.
 
-It converts FinTabNet table-crop images into one-page PDFs because our adapters expect PDFs.
+It converts FinTabNet table-crop images into one-page PDFs because our
+adapters expect PDFs.
 
-It also creates a small public manifest that locks the official test sample order for reproducibility.
+Flow (automatic, CLI-controlled):
+    prepare_fintabnet(limit=100)
+        1. manifest exists with >= 100 rows → return immediately
+        2. otherwise → stream from local parquet or HuggingFace → materialize
 
 """
 
@@ -45,17 +48,17 @@ from typing import Any
 
 DATASET_SLUG = "docling-project/FinTabNet_OTSL"
 DEFAULT_SPLIT = "test"
+EXPECTED_TEST_COUNT = 10397
 
-# FIX: was Path("C:/datasets/fintabnet_otsl_raw") — a Windows absolute path that
-# resolves as a relative path on Linux (Kaggle/RunPod), causing a confusing
-# FileNotFoundError on cloud runs. Now a cross-platform relative path.
-# Override at call sites or via the FINTABNET_RAW_DIR env var if needed.
+# env var pattern — same as doclaynet.py
+# On Kaggle:  export FINTABNET_RAW_DIR=/kaggle/input/fintabnet-otsl
+# On RunPod:  export FINTABNET_RAW_DIR=/workspace/fintabnet_raw
 DEFAULT_RAW_DATA_DIR = Path(
     os.getenv("FINTABNET_RAW_DIR", "data/fintabnet_raw")
 )
-
-# Where our benchmark will create clean local images, PDFs, and manifest.
-DEFAULT_OUTPUT_DIR = Path("data/fintabnet")
+DEFAULT_OUTPUT_DIR = Path(
+    os.getenv("FINTABNET_OUTPUT_DIR", "data/fintabnet")
+)
 
 # OTSL tokens that indicate merged/spanning table cells.
 SPAN_TOKENS = {"lcel", "ucel", "xcel"}
@@ -91,11 +94,9 @@ class FinTabNetSample:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_manifest_record(self) -> dict[str, Any]:
-        # FIX: was asdict(self) which leaves Path fields as Path objects (not
-        # JSON-serializable). The explicit str() overwrites only fixed pdf_path
-        # and image_path but any future Path field would silently break
-        # json.dumps. Now all fields are serialized explicitly so adding a new
-        # Path field cannot create a silent serialization bug.
+        # Explicit field-by-field — no asdict().
+        # Path fields serialized as str.
+        # Adding a new field here can never create a silent JSON serialization bug.
         return {
             "sample_id": self.sample_id,
             "source_index": self.source_index,
@@ -112,68 +113,25 @@ class FinTabNetSample:
         }
 
 
-def find_test_parquet_files(
-    raw_data_dir: str | Path = DEFAULT_RAW_DATA_DIR,
-) -> list[Path]:
-    """
-    Find the downloaded FinTabNet OTSL test parquet files.
-
-    Expected raw folder layout:
-        <raw_data_dir>/data/test-*.parquet
-
-    Default raw_data_dir is data/fintabnet_raw (cross-platform relative path).
-    Override with the raw_data_dir argument or set FINTABNET_RAW_DIR env var.
-    """
-    raw_data_dir = Path(raw_data_dir)
-    data_dir = raw_data_dir / "data"
-
-    if not data_dir.exists():
-        raise FileNotFoundError(
-            f"FinTabNet raw data folder not found: {data_dir}. "
-            "Expected downloaded parquet files under raw_data_dir/data/. "
-            "Pass raw_data_dir=Path('/your/path') explicitly."
-        )
-
-    parquet_files = sorted(data_dir.glob("test-*.parquet"))
-
-    if not parquet_files:
-        raise FileNotFoundError(
-            f"No FinTabNet test parquet files found in {data_dir}. "
-            "Expected files like test-00000-of-00002-*.parquet"
-        )
-
-    return parquet_files
-
-
-def load_raw_fintabnet_dataset(
-    raw_data_dir: str | Path = DEFAULT_RAW_DATA_DIR,
+def make_sample_id(
     *,
-    split: str = DEFAULT_SPLIT,
-):
+    split: str,
+    source_index: int,
+    rows: int,
+    cols: int,
+    gt_otsl: str,
+    gt_html: str,
+) -> str:
     """
-    Load local FinTabNet OTSL parquet files as a HuggingFace Dataset.
+    Deterministic sample ID — no public manifest needed.
 
-    This reads from the raw parquet files downloaded outside the repo.
-    It does not download anything from HuggingFace.
+    Two people running prepare_fintabnet() independently on the same
+    HuggingFace slug + split will get identical sample IDs.
     """
-    if split != "test":
-        raise ValueError(
-            "Only the FinTabNet test split is supported for benchmark runs."
-        )
+    digest_source = f"{split}|{source_index}|{rows}|{cols}|{gt_otsl}|{gt_html}"
+    digest = hashlib.sha1(digest_source.encode("utf-8")).hexdigest()[:12]
 
-    parquet_files = find_test_parquet_files(raw_data_dir)
-
-    from datasets import load_dataset
-
-    data_files = {
-        split: [str(path) for path in parquet_files],
-    }
-
-    return load_dataset(
-        "parquet",
-        data_files=data_files,
-        split=split,
-    )
+    return f"fintabnet_{split}_{source_index:06d}_{digest}"
 
 
 def normalize_otsl(value: Any) -> str:
@@ -212,12 +170,6 @@ def normalize_html(value: Any) -> str:
 
 
 def safe_int(value: Any) -> int:
-    """
-    Convert a dataset value into int safely.
-
-    FinTabNet rows/cols should be numbers, but this keeps the loader
-    stable if parquet returns strings, floats, or missing values.
-    """
     try:
         return int(value)
     except Exception:
@@ -225,9 +177,6 @@ def safe_int(value: Any) -> int:
 
 
 def otsl_tokens(otsl: str) -> list[str]:
-    """
-    Split a normalized OTSL string into tokens.
-    """
     return [
         token.strip()
         for token in str(otsl).replace(",", " ").split()
@@ -236,32 +185,37 @@ def otsl_tokens(otsl: str) -> list[str]:
 
 
 def detect_spans(otsl: str) -> bool:
-    """
-    Return True if OTSL contains merged/spanning-cell tokens.
-    """
     tokens = set(otsl_tokens(otsl))
     return bool(tokens & SPAN_TOKENS)
 
 
-def make_sample_id(
-    *,
-    split: str,
-    source_index: int,
-    rows: int,
-    cols: int,
-    gt_otsl: str,
-    gt_html: str,
-) -> str:
+def coerce_to_pil_image(image_value: Any):
     """
-    Create a stable sample ID for one FinTabNet sample.
+    Convert a raw FinTabNet image value into a PIL image.
 
-    The dataset rows do not need to provide their own ID.
-    We create one from split + index + table metadata + a short content hash.
+    Depending on how the parquet is loaded, the image field may already be
+    a PIL image, or it may be a dict containing image bytes.
     """
-    digest_source = f"{split}|{source_index}|{rows}|{cols}|{gt_otsl}|{gt_html}"
-    digest = hashlib.sha1(digest_source.encode("utf-8")).hexdigest()[:12]
+    import io
+    from PIL import Image
 
-    return f"fintabnet_{split}_{source_index:06d}_{digest}"
+    if isinstance(image_value, Image.Image):
+        return image_value
+
+    if isinstance(image_value, (bytes, bytearray)):
+        return Image.open(io.BytesIO(image_value))
+
+    if isinstance(image_value, dict):
+        image_bytes = image_value.get("bytes")
+        image_path = image_value.get("path")
+
+        if image_bytes:
+            return Image.open(io.BytesIO(image_bytes))
+
+        if image_path:
+            return Image.open(image_path)
+
+    raise TypeError(f"Unsupported FinTabNet image value: {type(image_value)!r}")
 
 
 def save_pil_image(
@@ -271,9 +225,6 @@ def save_pil_image(
 ) -> None:
     """
     Save a HuggingFace/PIL image as RGB PNG.
-
-    FinTabNet image field is expected to be a PIL image.
-    We save it locally so it can later be converted into a PDF.
     """
     from PIL import Image
 
@@ -319,34 +270,76 @@ def image_to_pdf(
     pdf_path.write_bytes(pdf_bytes)
 
 
-def coerce_to_pil_image(image_value: Any):
+def _find_local_parquet_files(
+    raw_data_dir: str | Path,
+    *,
+    split: str = DEFAULT_SPLIT,
+) -> list[Path]:
     """
-    Convert a raw FinTabNet image value into a PIL image.
+    Find local FinTabNet parquet files using multiple glob patterns.
 
-    Depending on how the parquet is loaded, the image field may already be
-    a PIL image, or it may be a dict containing image bytes.
+    Handles HuggingFace snapshot layout and manual download layouts.
     """
-    import io
+    raw_data_dir = Path(raw_data_dir)
 
-    from PIL import Image
+    patterns = [
+        f"**/{split}-*.parquet",
+        f"**/{split}.parquet",
+        f"data/{split}-*.parquet",
+        f"**/*{split}*.parquet",
+    ]
 
-    if isinstance(image_value, Image.Image):
-        return image_value
+    files: list[Path] = []
 
-    if isinstance(image_value, (bytes, bytearray)):
-        return Image.open(io.BytesIO(image_value))
+    for pattern in patterns:
+        files.extend(raw_data_dir.glob(pattern))
 
-    if isinstance(image_value, dict):
-        image_bytes = image_value.get("bytes")
-        image_path = image_value.get("path")
+    return sorted(set(files))
 
-        if image_bytes:
-            return Image.open(io.BytesIO(image_bytes))
 
-        if image_path:
-            return Image.open(image_path)
+def load_raw_fintabnet_dataset(
+    raw_data_dir: str | Path = DEFAULT_RAW_DATA_DIR,
+    *,
+    split: str = DEFAULT_SPLIT,
+):
+    """
+    Load FinTabNet dataset for iteration.
 
-    raise TypeError(f"Unsupported FinTabNet image value: {type(image_value)!r}")
+    Always uses streaming=True — safe for both limited and full runs.
+    Sequential iteration means no benefit to loading into memory.
+
+    Priority:
+        local parquet files found → stream from disk
+        no local parquet files    → stream directly from HuggingFace
+    """
+    from datasets import load_dataset
+
+    if split != "test":
+        raise ValueError(
+            "Only the FinTabNet test split is supported for benchmark runs."
+        )
+
+    raw_data_dir = Path(raw_data_dir)
+    raw_data_dir.mkdir(parents=True, exist_ok=True)
+
+    parquet_files = _find_local_parquet_files(raw_data_dir, split=split)
+
+    if parquet_files:
+        return load_dataset(
+            "parquet",
+            data_files={split: [str(p) for p in parquet_files]},
+            split=split,
+            streaming=True,
+        )
+
+    # No local files — stream directly from HuggingFace.
+    # No snapshot_download needed. Streaming handles it sample by sample.
+    return load_dataset(
+        DATASET_SLUG,
+        split=split,
+        cache_dir=str(raw_data_dir),
+        streaming=True,
+    )
 
 
 def materialize_fintabnet_sample(
@@ -355,11 +348,11 @@ def materialize_fintabnet_sample(
     source_index: int,
     split: str = DEFAULT_SPLIT,
     output_dir: str | Path = DEFAULT_OUTPUT_DIR,
-) -> "FinTabNetSample":
+) -> FinTabNetSample:
     """
     Convert one raw FinTabNet parquet row into a benchmark-ready sample.
 
-    This creates:
+    Creates:
     - PNG image file
     - one-page PDF file
     - FinTabNetSample object with GT fields
@@ -397,7 +390,9 @@ def materialize_fintabnet_sample(
 
     image_value = raw_sample.get("image")
     if image_value is None:
-        raise ValueError(f"FinTabNet sample index={source_index} has no image field.")
+        raise ValueError(
+            f"FinTabNet sample index={source_index} has no image field."
+        )
 
     if not image_path.exists():
         image = coerce_to_pil_image(image_value)
@@ -436,42 +431,6 @@ def materialize_fintabnet_sample(
     )
 
 
-def iter_materialized_fintabnet_samples(
-    raw_data_dir: str | Path = DEFAULT_RAW_DATA_DIR,
-    *,
-    split: str = DEFAULT_SPLIT,
-    output_dir: str | Path = DEFAULT_OUTPUT_DIR,
-    limit: int | None = None,
-) -> list[FinTabNetSample]:
-    """
-    Materialize FinTabNet test samples from local raw parquet files.
-
-    This is the one-time/dev setup path:
-    raw parquet -> PNG files -> PDF files -> FinTabNetSample objects
-    """
-    dataset = load_raw_fintabnet_dataset(
-        raw_data_dir=raw_data_dir,
-        split=split,
-    )
-
-    samples: list[FinTabNetSample] = []
-
-    for source_index, raw_sample in enumerate(dataset):
-        if limit is not None and len(samples) >= limit:
-            break
-
-        sample = materialize_fintabnet_sample(
-            raw_sample=raw_sample,
-            source_index=source_index,
-            split=split,
-            output_dir=output_dir,
-        )
-
-        samples.append(sample)
-
-    return samples
-
-
 def save_manifest(
     samples: list[FinTabNetSample],
     manifest_path: str | Path,
@@ -479,14 +438,8 @@ def save_manifest(
     """
     Save the local runtime FinTabNet manifest.
 
-    This manifest contains generated local image/PDF paths and ground-truth
-    table data required by runner.py and the scorer.
-
-    Expected default location:
-        data/fintabnet/test/manifest.jsonl
-
-    This file is a generated local artifact and should remain gitignored.
-    The committed reproducibility manifest is written by save_public_manifest().
+    Local artifact only — gitignored.
+    Reproducibility anchor is the run summary JSON, not this file.
     """
     manifest_path = Path(manifest_path)
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
@@ -495,7 +448,6 @@ def save_manifest(
         for rank, sample in enumerate(samples):
             record = sample.to_manifest_record()
             record["rank"] = rank
-
             f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
 
@@ -504,12 +456,6 @@ def load_manifest(
     *,
     limit: int | None = None,
 ) -> list[dict[str, Any]]:
-    """
-    Load a FinTabNet JSONL manifest.
-
-    This is the normal benchmark-runtime path:
-    manifest -> rows used by runner
-    """
     manifest_path = Path(manifest_path)
 
     if not manifest_path.exists():
@@ -533,11 +479,6 @@ def load_manifest(
 
 
 def sample_from_manifest_record(record: dict[str, Any]) -> FinTabNetSample:
-    """
-    Convert one JSONL manifest record back into a FinTabNetSample.
-
-    This is used during normal benchmark runs after the manifest already exists.
-    """
     return FinTabNetSample(
         sample_id=str(record["sample_id"]),
         source_index=safe_int(record["source_index"]),
@@ -559,11 +500,6 @@ def iter_fintabnet_samples_from_manifest(
     *,
     limit: int | None = None,
 ) -> list[FinTabNetSample]:
-    """
-    Load benchmark-ready FinTabNet samples from an existing manifest.
-
-    This is the normal benchmark runtime path.
-    """
     records = load_manifest(
         manifest_path=manifest_path,
         limit=limit,
@@ -577,10 +513,32 @@ def default_manifest_path(
     *,
     split: str = DEFAULT_SPLIT,
 ) -> Path:
-    """
-    Return the default local FinTabNet manifest path.
-    """
     return Path(output_dir) / split / "manifest.jsonl"
+
+
+def _manifest_is_sufficient(
+    manifest_path: str | Path,
+    limit: int | None,
+    expected_full_count: int = EXPECTED_TEST_COUNT,
+) -> bool:
+    """
+    Return True if the manifest has enough rows for this run.
+
+    limit=None  → need full expected count (10397)
+    limit=N     → need at least N rows
+    """
+    manifest_path = Path(manifest_path)
+
+    if not manifest_path.exists():
+        return False
+
+    with manifest_path.open("r", encoding="utf-8") as f:
+        count = sum(1 for line in f if line.strip())
+
+    if limit is None:
+        return count >= expected_full_count
+
+    return count >= limit
 
 
 def materialize_fintabnet_dataset(
@@ -590,43 +548,31 @@ def materialize_fintabnet_dataset(
     output_dir: str | Path = DEFAULT_OUTPUT_DIR,
     limit: int | None = None,
     manifest_path: str | Path | None = None,
-    public_manifest_path: str | Path | None = None,
-    allow_partial_public_manifest: bool = False,
 ) -> list[FinTabNetSample]:
     """
-    One-shot materialization helper.
+    Materialize FinTabNet samples and save manifest.
 
-    Raw parquet files
-        -> PNG files
-        -> PDF files
-        -> local runtime manifest
-        -> optional public reproducibility manifest
-        -> list[FinTabNetSample]
-
-    Use this during setup/dev, not every benchmark run.
-
-    Safety:
-        public_manifest_path should normally be used only for the full test split.
-        Passing limit together with public_manifest_path is blocked by default so
-        a dev run cannot accidentally overwrite the committed full manifest.
+    Streams from local parquet or HuggingFace depending on what is available.
     """
-    if (
-        public_manifest_path is not None
-        and limit is not None
-        and not allow_partial_public_manifest
-    ):
-        raise ValueError(
-            "Refusing to write a public FinTabNet manifest from a limited run. "
-            "Use limit=None for the full manifest, or pass "
-            "allow_partial_public_manifest=True for an explicitly named dev manifest."
-        )
-
-    samples = iter_materialized_fintabnet_samples(
+    dataset = load_raw_fintabnet_dataset(
         raw_data_dir=raw_data_dir,
         split=split,
-        output_dir=output_dir,
-        limit=limit,
     )
+
+    samples: list[FinTabNetSample] = []
+
+    for source_index, raw_sample in enumerate(dataset):
+        if limit is not None and len(samples) >= limit:
+            break
+
+        sample = materialize_fintabnet_sample(
+            raw_sample=raw_sample,
+            source_index=source_index,
+            split=split,
+            output_dir=output_dir,
+        )
+
+        samples.append(sample)
 
     if manifest_path is None:
         manifest_path = default_manifest_path(
@@ -639,48 +585,99 @@ def materialize_fintabnet_dataset(
         manifest_path=manifest_path,
     )
 
-    if public_manifest_path is not None:
-        save_public_manifest(
-            samples=samples,
-            manifest_path=public_manifest_path,
-        )
-
     return samples
 
 
-def save_public_manifest(
-    samples: list[FinTabNetSample],
-    manifest_path: str | Path,
-) -> None:
+def prepare_fintabnet(
+    raw_data_dir: str | Path = DEFAULT_RAW_DATA_DIR,
+    *,
+    split: str = DEFAULT_SPLIT,
+    output_dir: str | Path = DEFAULT_OUTPUT_DIR,
+    limit: int | None = None,
+    manifest_path: str | Path | None = None,
+) -> Path:
     """
-    Save a small reproducibility manifest suitable for GitHub.
+    Top-level entry point. This is what runner.py calls.
 
-    This manifest identifies the official dataset rows and locked order.
-    It intentionally does NOT include:
-    - local image paths
-    - local PDF paths
-    - ground-truth HTML
-    - ground-truth OTSL
+    Flow:
+        1. Manifest exists and has enough rows → return immediately
+        2. Otherwise → materialize via load_raw_fintabnet_dataset()
 
-    The full local runtime manifest remains under data/fintabnet/ and is gitignored.
+    load_raw_fintabnet_dataset() handles both cases internally:
+        local parquet files found → stream from disk
+        no local parquet files    → stream directly from HuggingFace
+
+    Never calls snapshot_download() automatically.
+    _download_fintabnet() exists as an explicit opt-in helper only.
+
+    Returns manifest path ready for iter_fintabnet_samples_from_manifest().
     """
+    if manifest_path is None:
+        manifest_path = default_manifest_path(
+            output_dir=output_dir,
+            split=split,
+        )
+
     manifest_path = Path(manifest_path)
-    manifest_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with manifest_path.open("w", encoding="utf-8") as f:
-        for rank, sample in enumerate(samples):
-            record = {
-                "rank": rank,
-                "dataset_slug": DATASET_SLUG,
-                "split": sample.split,
-                "source_index": sample.source_index,
-                "sample_id": sample.sample_id,
-                "rows": sample.rows,
-                "cols": sample.cols,
-                "has_spans": sample.has_spans,
-                "source_format": "table_crop_image",
-                "adapter_input": "image_to_pdf",
-                "is_full_page_document": False,
-            }
+    # Step 1 — manifest already sufficient
+    if _manifest_is_sufficient(manifest_path=manifest_path, limit=limit):
+        return manifest_path
 
-            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+    # Step 2 — materialize
+    # load_raw_fintabnet_dataset() streams from local parquet if present,
+    # or streams directly from HuggingFace if not. No explicit download needed.
+    materialize_fintabnet_dataset(
+        raw_data_dir=raw_data_dir,
+        split=split,
+        output_dir=output_dir,
+        limit=limit,
+        manifest_path=manifest_path,
+    )
+
+    return manifest_path
+
+
+def _download_fintabnet(
+    raw_data_dir: str | Path = DEFAULT_RAW_DATA_DIR,
+) -> Path:
+    """
+    Explicit opt-in helper to download the full FinTabNet snapshot locally.
+
+    NOT called automatically by prepare_fintabnet().
+    Use this only when you want a full local copy for repeated offline runs.
+
+    On Kaggle/RunPod: set FINTABNET_RAW_DIR and the streaming path handles it.
+    """
+    from huggingface_hub import snapshot_download
+
+    raw_data_dir = Path(raw_data_dir)
+    raw_data_dir.mkdir(parents=True, exist_ok=True)
+
+    print(f"Downloading FinTabNet OTSL to {raw_data_dir} ...")
+
+    snapshot_download(
+        repo_id=DATASET_SLUG,
+        repo_type="dataset",
+        local_dir=str(raw_data_dir),
+    )
+
+    print("Download complete.")
+
+    return raw_data_dir
+
+
+def get_hf_dataset_commit(slug: str = DATASET_SLUG) -> str:
+    """
+    Fetch HuggingFace dataset commit hash for run summary reproducibility.
+
+    Never raises — benchmark runs must not fail on a metadata fetch.
+    """
+    try:
+        from huggingface_hub import dataset_info
+
+        info = dataset_info(slug)
+        return info.sha or "unknown"
+    except Exception as exc:
+        print(f"WARNING: Could not fetch HF commit hash for {slug}: {exc}")
+        return "unknown"
