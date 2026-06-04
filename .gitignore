@@ -32,3 +32,6 @@ data/cache/
 
 # Local-only 
 scripts/build_benchmark_code_review_bundle.py
+
+data/doclaynet/
+data/doclaynet_raw/
