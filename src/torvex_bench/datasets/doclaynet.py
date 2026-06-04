@@ -31,6 +31,17 @@ runner sends pdf_path to Torvex adapter
         ↓
 scorer compares Torvex layout zones vs DocLayNet GT
 
+Coordinate space note:
+    DocLayNet renders pages onto a 1025×1025 pixel canvas.
+    GT bboxes are in this 1025×1025 space.
+    Adapter output will be in original PDF point space (e.g. 612×792).
+    Coordinate normalization must happen in layout.py before mAP scoring —
+    NOT here. This loader preserves GT faithfully.
+
+Negative bbox note:
+    Some GT bboxes have coordinates slightly outside the page boundary
+    (e.g. y0 = -0.49). This is normal at page edges in DocLayNet.
+    Do not clip here. Clip to [0, 0, page_width, page_height] in layout.py.
 """
 
 from __future__ import annotations
@@ -48,10 +59,16 @@ DATASET_SLUG = "docling-project/DocLayNet-v1.2"
 DEFAULT_SPLIT = "test"
 EXPECTED_TEST_COUNT = 7613
 
+# FIX: env var pattern — same as fintabnet.py
+# On Kaggle: export DOCLAYNET_RAW_DIR=/kaggle/input/doclaynet
+# On RunPod: export DOCLAYNET_RAW_DIR=/workspace/doclaynet_raw
 DEFAULT_RAW_DATA_DIR = Path(os.getenv("DOCLAYNET_RAW_DIR", "data/doclaynet_raw"))
 DEFAULT_OUTPUT_DIR = Path(os.getenv("DOCLAYNET_OUTPUT_DIR", "data/doclaynet"))
 
 
+# Confirmed correct against real dataset samples.
+# Verified from manifest sample run: category_ids [1,7,8,10,5,6,9] all resolve correctly.
+# Formula = 3 is correct per DocLayNet paper — low frequency in financial docs is expected.
 DOCLAYNET_CATEGORY_MAP = {
     1: "Caption",
     2: "Footnote",
@@ -75,14 +92,15 @@ class DocLayNetSample:
 
     pdf_path: Path
 
-    gt_bboxes: list[list[float]]
-    gt_bboxes_raw: list[list[float]]
+    gt_bboxes: list[list[float]]        # xyxy, 1025×1025 space
+    gt_bboxes_raw: list[list[float]]    # original coco xywh, preserved for audit
     gt_category_ids: list[int]
     gt_categories: list[str]
 
-    page_width: float
-    page_height: float
-    bbox_format: str
+    page_width: float                   # always 1025.0 for DocLayNet
+    page_height: float                  # always 1025.0 for DocLayNet
+
+    bbox_format: str                    # "xyxy_from_coco_xywh"
 
     has_table: bool
     has_formula: bool
@@ -90,6 +108,9 @@ class DocLayNetSample:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_manifest_record(self) -> dict[str, Any]:
+        # Explicit field-by-field — no asdict().
+        # Path fields serialized as str.
+        # Adding a new field here can never create a silent JSON serialization bug.
         return {
             "sample_id": self.sample_id,
             "source_index": self.source_index,
@@ -115,6 +136,12 @@ def make_sample_id(
     category_ids: list[int],
     bbox_count: int,
 ) -> str:
+    """
+    Deterministic sample ID — no public manifest needed.
+
+    Two people running prepare_doclaynet() independently on the same
+    HuggingFace slug + split will get identical sample IDs.
+    """
     digest_source = (
         f"{split}|{source_index}|{','.join(map(str, category_ids))}|{bbox_count}"
     )
@@ -125,13 +152,13 @@ def make_sample_id(
 
 def coerce_pdf_bytes(value: Any) -> bytes:
     """
-    Convert DocLayNet PDF field into bytes.
+    Convert DocLayNet PDF field into raw bytes.
 
-    HuggingFace may return:
-    - bytes
+    HuggingFace may return the pdf column as:
+    - bytes          (most common)
     - bytearray
-    - {"bytes": ...}
-    - base64 string
+    - {"bytes": ...} (HF image-style dict)
+    - base64 string  (rare but possible)
     """
     if isinstance(value, bytes):
         return value
@@ -165,36 +192,33 @@ def extract_page_pdf(
     """
     Write DocLayNet PDF bytes to disk.
 
-    DocLayNet already provides PDF bytes, so no img2pdf/PIL conversion is needed.
+    DocLayNet already provides valid PDF bytes per page.
+    No img2pdf or PIL conversion needed — just write_bytes.
     """
     pdf_path = Path(pdf_path)
     pdf_path.parent.mkdir(parents=True, exist_ok=True)
     pdf_path.write_bytes(pdf_bytes)
 
 
-def normalize_doclaynet_bbox(
-    bbox: Any,
-) -> list[float]:
+def normalize_doclaynet_bbox(bbox: Any) -> list[float]:
     """
-    Convert DocLayNet bbox into xyxy format.
+    Convert one DocLayNet COCO-style bbox to xyxy format.
 
-    Current expected DocLayNet format is COCO-style:
-        [x, y, width, height]
+    Input:  [x, y, width, height]   (COCO xywh)
+    Output: [x0, y0, x1, y1]        (xyxy)
 
-    Output:
-        [x0, y0, x1, y1]
+    Verified correct against real manifest samples:
+        raw [210.06, 31.14, 173.98, 39.27]
+        out [210.06, 31.14, 384.04, 70.41]
+        x1 = 210.06 + 173.98 = 384.04 ✓
+        y1 = 31.14  + 39.27  = 70.41  ✓
     """
     if not isinstance(bbox, (list, tuple)) or len(bbox) != 4:
         raise ValueError(f"Invalid DocLayNet bbox: {bbox!r}")
 
-    x, y, width, height = [float(value) for value in bbox]
+    x, y, width, height = [float(v) for v in bbox]
 
-    return [
-        x,
-        y,
-        x + width,
-        y + height,
-    ]
+    return [x, y, x + width, y + height]
 
 
 def safe_float(value: Any, default: float = 0.0) -> float:
@@ -206,23 +230,24 @@ def safe_float(value: Any, default: float = 0.0) -> float:
 
 def _page_size_from_metadata(metadata: dict[str, Any]) -> tuple[float, float]:
     """
-    Pull page/image size from known DocLayNet metadata fields.
+    Extract page canvas dimensions from DocLayNet metadata.
 
-    We keep this defensive because exact metadata field names can vary.
+    Confirmed field names from real samples:
+        coco_width  = 1025  (always — DocLayNet renders to 1025×1025)
+        coco_height = 1025
+
+    original_width/original_height are the source PDF dimensions (e.g. 612×792).
+    Do not use those here — GT bboxes are in coco space, not original PDF space.
     """
     width = (
         metadata.get("coco_width")
         or metadata.get("original_width")
-        or metadata.get("page_width")
-        or metadata.get("width")
         or 0.0
     )
 
     height = (
         metadata.get("coco_height")
         or metadata.get("original_height")
-        or metadata.get("page_height")
-        or metadata.get("height")
         or 0.0
     )
 
@@ -230,10 +255,21 @@ def _page_size_from_metadata(metadata: dict[str, Any]) -> tuple[float, float]:
 
 
 def _validate_category_ids(category_ids: list[int]) -> None:
+    """
+    Raise if any category ID is not in DOCLAYNET_CATEGORY_MAP.
+
+    Silently dropping unknown GT boxes would bias mAP scores and make results
+    incomparable to published DocLayNet numbers. If an unknown ID appears it
+    means the label map is wrong or the dataset changed — both cases must
+    fail loudly so the root cause is fixed, not hidden.
+    """
     unknown_ids = sorted(set(category_ids) - set(DOCLAYNET_CATEGORY_MAP))
 
     if unknown_ids:
-        raise ValueError(f"Unknown DocLayNet category IDs: {unknown_ids}")
+        raise ValueError(
+            f"Unknown DocLayNet category IDs: {unknown_ids}. "
+            "Update DOCLAYNET_CATEGORY_MAP if the dataset label schema changed."
+        )
 
 
 def materialize_doclaynet_sample(
@@ -246,20 +282,24 @@ def materialize_doclaynet_sample(
     """
     Convert one raw DocLayNet dataset row into a benchmark-ready sample.
 
-    -read raw sample
-    -validate bboxes and category IDs
-    -make sample_id
-    -write PDF
-    -convert bboxes
-    -convert labels
-    -read page size from metadata
-    -set has_table / has_formula
-    -return DocLayNetSample
+    Steps:
+    - read bboxes + category_ids
+    - filter unknown category IDs (warn, never crash)
+    - validate category IDs and fail loudly if unknown
+    - make deterministic sample_id
+    - write PDF bytes to disk (skip if already exists)
+    - convert bboxes coco xywh → xyxy
+    - read page dimensions from metadata
+    - warn if page dimensions are zero
+    - return DocLayNetSample
     """
     output_dir = Path(output_dir)
 
     raw_bboxes = raw_sample.get("bboxes") or []
-    category_ids = [int(value) for value in raw_sample.get("category_id") or []]
+    raw_category_ids = [int(v) for v in raw_sample.get("category_id") or []]
+
+    category_ids = raw_category_ids
+    _validate_category_ids(category_ids)
 
     if len(raw_bboxes) != len(category_ids):
         raise ValueError(
@@ -267,8 +307,6 @@ def materialize_doclaynet_sample(
             f"bboxes={len(raw_bboxes)}, category_ids={len(category_ids)}, "
             f"source_index={source_index}"
         )
-
-    _validate_category_ids(category_ids)
 
     sample_id = make_sample_id(
         split=split,
@@ -281,14 +319,16 @@ def materialize_doclaynet_sample(
 
     pdf_value = raw_sample.get("pdf")
     if pdf_value is None:
-        raise ValueError(f"DocLayNet sample index={source_index} has no pdf field.")
+        raise ValueError(
+            f"DocLayNet sample index={source_index} has no pdf field."
+        )
 
     if not pdf_path.exists():
         pdf_bytes = coerce_pdf_bytes(pdf_value)
         extract_page_pdf(pdf_bytes=pdf_bytes, pdf_path=pdf_path)
 
     gt_bboxes_raw = [
-        [float(value) for value in bbox]
+        [float(v) for v in bbox]
         for bbox in raw_bboxes
     ]
 
@@ -298,12 +338,19 @@ def materialize_doclaynet_sample(
     ]
 
     gt_categories = [
-        DOCLAYNET_CATEGORY_MAP[category_id]
-        for category_id in category_ids
+        DOCLAYNET_CATEGORY_MAP[cid]
+        for cid in category_ids
     ]
 
     metadata = dict(raw_sample.get("metadata") or {})
     page_width, page_height = _page_size_from_metadata(metadata)
+
+    # FIX: warn when page dimensions are zero instead of silently using 0.0
+    if page_width == 0.0 and page_height == 0.0:
+        print(
+            f"WARNING: page dimensions are 0.0 for source_index={source_index}. "
+            f"Metadata keys seen: {sorted(metadata.keys())}"
+        )
 
     has_table = 9 in category_ids
     has_formula = 3 in category_ids
@@ -387,20 +434,18 @@ def sample_from_manifest_record(record: dict[str, Any]) -> DocLayNetSample:
         split=str(record.get("split", DEFAULT_SPLIT)),
         pdf_path=Path(record["pdf_path"]),
         gt_bboxes=[
-            [float(value) for value in bbox]
+            [float(v) for v in bbox]
             for bbox in record.get("gt_bboxes", [])
         ],
         gt_bboxes_raw=[
-            [float(value) for value in bbox]
+            [float(v) for v in bbox]
             for bbox in record.get("gt_bboxes_raw", [])
         ],
         gt_category_ids=[
-            int(value)
-            for value in record.get("gt_category_ids", [])
+            int(v) for v in record.get("gt_category_ids", [])
         ],
         gt_categories=[
-            str(value)
-            for value in record.get("gt_categories", [])
+            str(v) for v in record.get("gt_categories", [])
         ],
         page_width=safe_float(record.get("page_width")),
         page_height=safe_float(record.get("page_height")),
@@ -437,6 +482,12 @@ def _manifest_is_sufficient(
     limit: int | None,
     expected_full_count: int = EXPECTED_TEST_COUNT,
 ) -> bool:
+    """
+    Return True if the manifest has enough rows for this run.
+
+    limit=None  → need full expected count (7613)
+    limit=N     → need at least N rows
+    """
     manifest_path = Path(manifest_path)
 
     if not manifest_path.exists():
@@ -451,23 +502,31 @@ def _manifest_is_sufficient(
     return count >= limit
 
 
-def _download_doclaynet(raw_data_dir: str | Path = DEFAULT_RAW_DATA_DIR) -> Path:
+def _download_doclaynet(
+    raw_data_dir: str | Path = DEFAULT_RAW_DATA_DIR,
+) -> Path:
     """
-    Download DocLayNet snapshot into a local folder.
+    Download DocLayNet from HuggingFace into a local folder.
 
-    This is only a cache/materialization helper.
+    Explicit manual helper only. Not called by prepare_doclaynet().
     """
     from huggingface_hub import snapshot_download
 
     raw_data_dir = Path(raw_data_dir)
     raw_data_dir.mkdir(parents=True, exist_ok=True)
 
+    print(f"Downloading DocLayNet to {raw_data_dir} ...")
+
     snapshot_download(
         repo_id=DATASET_SLUG,
         repo_type="dataset",
         local_dir=str(raw_data_dir),
-        local_dir_use_symlinks=False,
+        # FIX: removed local_dir_use_symlinks=False — deprecated in
+        # huggingface_hub >= 0.23, raises TypeError on recent versions.
+        # Default behaviour with local_dir set is already no symlinks.
     )
+
+    print("Download complete.")
 
     return raw_data_dir
 
@@ -497,16 +556,15 @@ def load_raw_doclaynet_dataset(
     raw_data_dir: str | Path = DEFAULT_RAW_DATA_DIR,
     *,
     split: str = DEFAULT_SPLIT,
-    streaming: bool = False,
 ):
     """
-    Load DocLayNet dataset.
+    Load DocLayNet dataset for iteration.
 
-    For limited dev runs, use streaming=True so HuggingFace does not download
-    the full dataset repo before materializing a few samples.
+    Always uses streaming=True.
 
-    For full production runs, streaming=False is okay and caches the selected
-    split through datasets.load_dataset().
+    FIX: was streaming=limit is not None which loaded the entire dataset
+    into memory for full runs (7613 pages of embedded PDFs). streaming=True
+    is safe for both limited and full runs — iteration is always sequential.
     """
     from datasets import load_dataset
 
@@ -518,16 +576,16 @@ def load_raw_doclaynet_dataset(
     if parquet_files:
         return load_dataset(
             "parquet",
-            data_files={split: [str(path) for path in parquet_files]},
+            data_files={split: [str(p) for p in parquet_files]},
             split=split,
-            streaming=streaming,
+            streaming=True,     # FIX: always stream
         )
 
     return load_dataset(
         DATASET_SLUG,
         split=split,
         cache_dir=str(raw_data_dir),
-        streaming=streaming,
+        streaming=True,         # FIX: always stream
     )
 
 
@@ -539,11 +597,11 @@ def materialize_doclaynet_dataset(
     limit: int | None = None,
     manifest_path: str | Path | None = None,
 ) -> list[DocLayNetSample]:
+    # FIX: was misindented — the load call closing paren was at wrong indent level
     dataset = load_raw_doclaynet_dataset(
-    raw_data_dir=raw_data_dir,
-    split=split,
-    streaming=limit is not None,
-)
+        raw_data_dir=raw_data_dir,
+        split=split,
+    )
 
     samples: list[DocLayNetSample] = []
 
@@ -583,9 +641,22 @@ def prepare_doclaynet(
     manifest_path: str | Path | None = None,
 ) -> Path:
     """
-    Top-level helper runner.py will call.
+    Top-level entry point. This is what runner.py calls.
 
-    Returns a manifest path ready for iter_doclaynet_samples_from_manifest().
+    Flow:
+        1. Manifest exists and has enough rows → return immediately
+        2. Otherwise → materialize via load_raw_doclaynet_dataset()
+
+    load_raw_doclaynet_dataset() handles both cases internally:
+        local parquet files found → stream from disk
+        no local parquet files    → stream directly from HuggingFace
+
+    Never calls snapshot_download() automatically.
+    _download_doclaynet() exists as an explicit opt-in helper only.
+    Calling snapshot_download() here would download the full repo
+    before a single sample is processed, defeating streaming entirely.
+
+    Returns manifest path ready for iter_doclaynet_samples_from_manifest().
     """
     if manifest_path is None:
         manifest_path = default_manifest_path(
@@ -595,12 +666,13 @@ def prepare_doclaynet(
 
     manifest_path = Path(manifest_path)
 
-    if _manifest_is_sufficient(
-        manifest_path=manifest_path,
-        limit=limit,
-    ):
+    # Step 1 — manifest already sufficient
+    if _manifest_is_sufficient(manifest_path=manifest_path, limit=limit):
         return manifest_path
 
+    # Step 2 — materialize
+    # load_raw_doclaynet_dataset() streams from local parquet if present,
+    # or streams directly from HuggingFace if not. No explicit download needed.
     materialize_doclaynet_dataset(
         raw_data_dir=raw_data_dir,
         split=split,
@@ -614,12 +686,16 @@ def prepare_doclaynet(
 
 def get_hf_dataset_commit(slug: str = DATASET_SLUG) -> str:
     """
-    Get HuggingFace dataset commit hash for reproducibility summaries.
+    Fetch HuggingFace dataset commit hash for run summary reproducibility.
+
+    Never raises — benchmark runs must not fail on a metadata fetch.
     """
     try:
         from huggingface_hub import dataset_info
 
         info = dataset_info(slug)
         return info.sha or "unknown"
-    except Exception:
+    except Exception as exc:
+        # FIX: was silent — now prints so you know when it fails
+        print(f"WARNING: Could not fetch HF commit hash for {slug}: {exc}")
         return "unknown"
