@@ -186,7 +186,14 @@ def score_table_html(
         structure_only=True,
     )
 
-    return round(float(teds), 3), round(float(teds_struct), 3)
+# 2026-06-06:
+# docling-eval TEDS should be normalized, but scorer edge cases can return
+# tiny negative or >1.0 float values. Clamp before rounding so benchmark
+# JSONL and summary means always stay in the valid [0.0, 1.0] score range.
+    return (
+    round(max(0.0, min(1.0, float(teds))), 3),
+    round(max(0.0, min(1.0, float(teds_struct))), 3),
+)
 
 
 # These helpers pull tables out of DocumentResult-like objects.

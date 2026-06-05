@@ -43,6 +43,33 @@ def test_score_table_html_text_mismatch_keeps_structure_score() -> None:
     assert teds < 1.0
     assert teds_struct == 1.0
 
+# 2026-06-06:
+# Regression test for invalid TEDS values. This protects future benchmark
+# summaries from negative or >1.0 scores if the evaluator changes behavior.
+def test_score_table_html_clamps_scores(monkeypatch) -> None:
+    import torvex_bench.scorers.table_structure as table_structure
+
+    calls = []
+
+    def fake_teds_scorer(*, gt_table, pred_table, structure_only):
+        calls.append(structure_only)
+
+        if structure_only:
+            return 1.25
+
+        return -0.25
+
+    monkeypatch.setattr(table_structure, "_TEDS_SCORER", fake_teds_scorer)
+
+    teds, teds_struct = table_structure.score_table_html(
+        gt_html="<tr><td>A</td></tr>",
+        pred_html="<table><tr><td>A</td></tr></table>",
+    )
+
+    assert teds == 0.0
+    assert teds_struct == 1.0
+    assert calls == [False, True]
+
 
 def test_extract_predicted_tables_from_document_result() -> None:
     table = TableResult(rows=[["A"]])
