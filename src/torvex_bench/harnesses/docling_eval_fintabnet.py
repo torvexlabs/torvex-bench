@@ -180,6 +180,7 @@ def generate_fintabnet_predictions(
 
             if not table_rows:
                 missing_tables += 1
+                table_rows = [[""]]
 
             # Always write a prediction document.
             # If no table is found, this writes an empty DoclingDocument instead of
