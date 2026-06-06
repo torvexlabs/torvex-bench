@@ -1,3 +1,46 @@
+"""
+FinTabNet prediction harness for official docling-eval scoring.
+
+This module generates DoclingDocument JSON predictions for the FinTabNet
+table-structure benchmark using Torvex Extract.
+
+High-level flow:
+1. Read official docling-eval FinTabNet GT parquet rows.
+Each row already contains:
+- document_id
+- BinaryDocument PNG bytes
+- GroundTruthDocument
+2. Convert the FinTabNet PNG table crop into a temporary one-page PDF.
+Torvex Extract expects PDF input, so this is the input bridge.
+3. Run TorvexExtractAdapter on the temporary PDF.
+4. Normalize the adapter's DocumentResult into a JSON-safe benchmark dict.
+5. Extract the first table's rows from the normalized output.
+FinTabNet samples are single table crops, so only one table is expected.
+6. If no table is found, emit a dummy one-cell table [[""]].
+This avoids docling-eval skipping the sample due to table-count mismatch.
+The sample is then scored and penalized honestly.
+7. Export rows[][] into a valid DoclingDocument JSON prediction.
+8. Save prediction as:
+<prediction_dir>/<document_id>.json
+
+Why this exists:
+torvex-bench does not reimplement TEDS or official metrics.
+It only generates predictions in the format expected by docling-eval.
+docling-eval then creates the eval dataset and computes official scores.
+
+Default behavior:
+- Input PNG/PDF files are temporary and deleted automatically.
+- Prediction JSON files are saved under benchmarks/docling_eval/.../predictions.
+- Normalized Torvex JSON is not saved unless --save-normalized is used.
+- Temporary input PDFs are not saved unless --keep-inputs is used.
+
+Important:
+This module only generates predictions.
+It does not run `docling-eval create-eval` or `docling-eval evaluate`.
+Those steps should be handled by the higher-level benchmark CLI.
+"""
+
+
 from __future__ import annotations
 
 import argparse
