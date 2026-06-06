@@ -35,3 +35,19 @@ scripts/build_benchmark_code_review_bundle.py
 
 data/doclaynet/
 data/doclaynet_raw/
+
+# Generated benchmark data / predictions
+benchmarks/docling_eval/*/gt_dataset/
+benchmarks/docling_eval/*/eval_dataset/
+benchmarks/docling_eval/*/predictions/
+benchmarks/docling_eval/*/results/
+benchmarks/docling_eval/*_smoke/
+
+# Raw/debug outputs
+results/raw/
+results/previews/
+data/
+
+# Large/intermediate formats
+*.jsonl
+*.jsonl.gz
