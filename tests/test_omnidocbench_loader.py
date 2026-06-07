@@ -4,333 +4,286 @@ from pathlib import Path
 import pytest
 
 from torvex_bench.datasets.omnidocbench import (
-    INPUT_TYPE_DIGITAL,
+    DATASET_SLUG,
+    DEFAULT_INPUT_TYPE,
+    EXPECTED_COUNT,
+    GT_JSON_FILENAME,
+    IMAGE_SUBDIR,
     INPUT_TYPE_SCANNED,
     OmniDocBenchSample,
+    default_manifest_path,
+    image_filename_from_page_info,
+    image_repo_path,
     iter_omnidocbench_samples_from_manifest,
-    load_gt_json,
+    local_image_path,
     make_sample_id,
+    materialize_omnidocbench_dataset,
     materialize_omnidocbench_sample,
     poly_to_xyxy,
     prepare_omnidocbench,
-    sample_from_manifest_record,
     save_manifest,
 )
 
 
-FAKE_PDF_BYTES = b"%PDF-1.4\n% fake omnidocbench pdf\n%%EOF"
+FAKE_IMAGE_BYTES = b"\x89PNG\r\n\x1a\nfake omnidocbench image"
 
 
-def make_fake_raw_record() -> dict:
+def make_raw_record(
+    *,
+    image_path: str = "page-d1561665-5359-42fe-920c-d6e3bff81953.png",
+) -> dict:
     return {
         "page_info": {
-            "image_path": "page-test-001.png",
+            "image_path": image_path,
+            "page_no": 1,
             "width": 1000,
-            "height": 2000,
+            "height": 1400,
             "page_attribute": {
-                "data_source": "book",
                 "language": "english",
                 "layout": "single_column",
-                "special_issue": ["fuzzy_scan"],
             },
         },
         "layout_dets": [
             {
+                "category_type": "title",
+                "poly": [10, 20, 110, 20, 110, 60, 10, 60],
+                "ignore": False,
+                "order": 1,
+                "anno_id": 1,
+                "text": "Example title",
+            },
+            {
                 "category_type": "text_block",
-                "poly": [10, 20, 110, 20, 110, 70, 10, 70],
+                "poly": [10, 80, 300, 80, 300, 140, 10, 140],
                 "ignore": False,
                 "order": 2,
-                "anno_id": "box_text_1",
-                "attribute": {},
-                "text": "hello world",
-            },
-            {
-                "category_type": "table",
-                "poly": [20, 100, 220, 100, 220, 300, 20, 300],
-                "ignore": False,
-                "order": 3,
-                "anno_id": "box_table_1",
-                "attribute": {},
-                "html": "<table><tr><td>A</td></tr></table>",
-            },
-            {
-                "category_type": "equation_isolated",
-                "poly": [30, 400, 230, 400, 230, 500, 30, 500],
-                "ignore": False,
-                "order": 4,
-                "anno_id": "box_formula_1",
-                "attribute": {},
-                "latex": "$$x+y$$",
-            },
-            {
-                "category_type": "abandon",
-                "poly": [0, 0, 100, 0, 100, 20, 0, 20],
-                "ignore": True,
-                "order": 1,
-                "anno_id": "box_ignore_1",
-                "attribute": {},
+                "anno_id": 2,
+                "text": "Example paragraph",
             },
         ],
-        "extra": {},
+        "extra": {
+            "source": "unit-test",
+        },
     }
 
 
-def create_fake_pdf_folders(raw_data_dir: Path) -> None:
-    pdfs_dir = raw_data_dir / "pdfs"
-    ori_pdfs_dir = raw_data_dir / "ori_pdfs"
+def write_fake_raw_dataset(
+    raw_data_dir: Path,
+    *,
+    records: list[dict] | None = None,
+) -> list[dict]:
+    raw_data_dir.mkdir(parents=True, exist_ok=True)
 
-    pdfs_dir.mkdir(parents=True, exist_ok=True)
-    ori_pdfs_dir.mkdir(parents=True, exist_ok=True)
+    if records is None:
+        records = [make_raw_record()]
 
-    (pdfs_dir / "page-test-001.pdf").write_bytes(FAKE_PDF_BYTES)
-    (ori_pdfs_dir / "page-test-001.pdf").write_bytes(FAKE_PDF_BYTES)
+    (raw_data_dir / GT_JSON_FILENAME).write_text(
+        json.dumps(records, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    for record in records:
+        image_name = image_filename_from_page_info(record["page_info"])
+        image_path = raw_data_dir / IMAGE_SUBDIR / image_name
+        image_path.parent.mkdir(parents=True, exist_ok=True)
+        image_path.write_bytes(FAKE_IMAGE_BYTES)
+
+    return records
+
+
+def test_constants_are_scanned_image_only() -> None:
+    assert INPUT_TYPE_SCANNED == "scanned"
+    assert DEFAULT_INPUT_TYPE == "scanned"
+    assert DATASET_SLUG == "opendatalab/OmniDocBench"
+    assert EXPECTED_COUNT == 1651
+
+
+def test_image_repo_path_prepends_images_folder() -> None:
+    assert image_repo_path("page-abc.png") == "images/page-abc.png"
+    assert image_repo_path("images/page-abc.png") == "images/page-abc.png"
+
+
+def test_image_filename_from_page_info_normalizes_paths() -> None:
+    assert (
+        image_filename_from_page_info({"image_path": "page-abc.png"})
+        == "page-abc.png"
+    )
+    assert (
+        image_filename_from_page_info({"image_path": "images/page-abc.png"})
+        == "page-abc.png"
+    )
+    assert (
+        image_filename_from_page_info({"image_path": r"images\page-abc.png"})
+        == "page-abc.png"
+    )
+
+
+def test_image_filename_from_page_info_rejects_missing_path() -> None:
+    with pytest.raises(ValueError, match="page_info.image_path"):
+        image_filename_from_page_info({})
+
+
+def test_local_image_path_uses_images_subdir(tmp_path: Path) -> None:
+    path = local_image_path("page-abc.png", raw_data_dir=tmp_path)
+
+    assert path == tmp_path / "images" / "page-abc.png"
 
 
 def test_make_sample_id_is_stable() -> None:
     sample_id_1 = make_sample_id(
         source_index=7,
-        image_filename="page-test-001.png",
+        image_filename="page-abc.png",
     )
-
     sample_id_2 = make_sample_id(
         source_index=7,
-        image_filename="page-test-001.png",
+        image_filename="page-abc.png",
     )
 
     assert sample_id_1 == sample_id_2
     assert sample_id_1.startswith("omnidocbench_000007_")
 
 
-def test_poly_to_xyxy_converts_quad_to_bbox() -> None:
-    result = poly_to_xyxy([10, 20, 110, 20, 110, 70, 10, 70])
-
-    assert result == [10, 20, 110, 70]
-
-
-def test_poly_to_xyxy_rejects_invalid_poly() -> None:
-    with pytest.raises(ValueError):
-        poly_to_xyxy([1, 2, 3, 4])
+def test_poly_to_xyxy_converts_quadrilateral() -> None:
+    assert poly_to_xyxy([10, 20, 110, 20, 110, 60, 10, 60]) == [
+        10.0,
+        20.0,
+        110.0,
+        60.0,
+    ]
 
 
-def test_materialize_omnidocbench_sample_builds_sample(tmp_path: Path) -> None:
+def test_poly_to_xyxy_rejects_bad_poly() -> None:
+    with pytest.raises(ValueError, match="must have 8 floats"):
+        poly_to_xyxy([1, 2, 3])
+
+
+def test_materialize_omnidocbench_sample_builds_image_sample(tmp_path: Path) -> None:
     raw_data_dir = tmp_path / "raw"
-    create_fake_pdf_folders(raw_data_dir)
-
+    records = write_fake_raw_dataset(raw_data_dir)
     sample = materialize_omnidocbench_sample(
-        raw_record=make_fake_raw_record(),
+        raw_record=records[0],
         source_index=0,
         raw_data_dir=raw_data_dir,
-        output_dir=tmp_path / "out",
     )
 
     assert isinstance(sample, OmniDocBenchSample)
     assert sample.source_index == 0
-    assert sample.image_filename == "page-test-001.png"
-
-    assert sample.pdf_path_digital == raw_data_dir / "ori_pdfs" / "page-test-001.pdf"
-    assert sample.pdf_path_scanned == raw_data_dir / "pdfs" / "page-test-001.pdf"
-
-    assert sample.pdf_path(INPUT_TYPE_DIGITAL) == sample.pdf_path_digital
-    assert sample.pdf_path(INPUT_TYPE_SCANNED) == sample.pdf_path_scanned
-
-    assert sample.page_width == 1000.0
-    assert sample.page_height == 2000.0
-
-    assert sample.data_source == "book"
-    assert sample.language == "english"
-    assert sample.layout == "single_column"
-    assert sample.special_issues == ["fuzzy_scan"]
-
-    assert sample.has_table is True
-    assert sample.has_formula is True
-    assert sample.has_figure is False
-
-    assert len(sample.gt_layout_dets) == 4
-    assert len(sample.gt_text_blocks) == 1
-    assert len(sample.gt_tables) == 1
-
-    assert [det["anno_id"] for det in sample.gt_reading_order] == [
-        "box_text_1",
-        "box_table_1",
-        "box_formula_1",
-    ]
-
-    assert sample.gt_bboxes_xyxy[0] == [10.0, 20.0, 110.0, 70.0]
-    assert sample.gt_bboxes_raw_poly[0] == [10.0, 20.0, 110.0, 20.0, 110.0, 70.0, 10.0, 70.0]
-
-    assert sample.metadata["dataset_slug"] == "opendatalab/OmniDocBench"
-    assert sample.metadata["source_index"] == 0
+    assert sample.image_filename == "page-d1561665-5359-42fe-920c-d6e3bff81953.png"
+    assert sample.image_repo_path == (
+        "images/page-d1561665-5359-42fe-920c-d6e3bff81953.png"
+    )
+    assert sample.image_path.exists()
+    assert sample.image_stem == "page-d1561665-5359-42fe-920c-d6e3bff81953"
+    assert sample.prediction_filename == (
+        "page-d1561665-5359-42fe-920c-d6e3bff81953.md"
+    )
+    assert sample.metadata["dataset_slug"] == DATASET_SLUG
+    assert sample.metadata["prediction_filename"] == sample.prediction_filename
 
 
-def test_materialize_omnidocbench_sample_rejects_unknown_category(tmp_path: Path) -> None:
+def test_materialize_omnidocbench_sample_rejects_missing_image(
+    tmp_path: Path,
+) -> None:
     raw_data_dir = tmp_path / "raw"
-    create_fake_pdf_folders(raw_data_dir)
+    raw_data_dir.mkdir(parents=True)
+    raw_record = make_raw_record()
 
-    raw_record = make_fake_raw_record()
-    raw_record["layout_dets"][0]["category_type"] = "unknown_new_category"
-
-    with pytest.raises(ValueError):
+    with pytest.raises(FileNotFoundError, match="Missing OmniDocBench image"):
         materialize_omnidocbench_sample(
             raw_record=raw_record,
             source_index=0,
             raw_data_dir=raw_data_dir,
-            output_dir=tmp_path / "out",
+            require_image_exists=True,
         )
 
 
-def test_pdf_path_rejects_unknown_input_type(tmp_path: Path) -> None:
+def test_manifest_roundtrip(tmp_path: Path) -> None:
     raw_data_dir = tmp_path / "raw"
-    create_fake_pdf_folders(raw_data_dir)
+    records = write_fake_raw_dataset(raw_data_dir)
 
     sample = materialize_omnidocbench_sample(
-        raw_record=make_fake_raw_record(),
+        raw_record=records[0],
         source_index=0,
         raw_data_dir=raw_data_dir,
-        output_dir=tmp_path / "out",
     )
 
-    with pytest.raises(ValueError):
-        sample.pdf_path("bad_mode")
+    manifest_path = tmp_path / "sample_manifest.jsonl"
+    save_manifest([sample], manifest_path)
+
+    loaded = iter_omnidocbench_samples_from_manifest(manifest_path)
+
+    assert len(loaded) == 1
+    assert loaded[0].sample_id == sample.sample_id
+    assert loaded[0].image_filename == sample.image_filename
+    assert loaded[0].prediction_filename == sample.prediction_filename
 
 
-def test_to_manifest_record_is_json_serializable(tmp_path: Path) -> None:
+def test_iter_manifest_respects_limit(tmp_path: Path) -> None:
     raw_data_dir = tmp_path / "raw"
-    create_fake_pdf_folders(raw_data_dir)
+    records = [
+        make_raw_record(image_path="page-a.png"),
+        make_raw_record(image_path="page-b.png"),
+    ]
+    write_fake_raw_dataset(raw_data_dir, records=records)
 
-    sample = materialize_omnidocbench_sample(
-        raw_record=make_fake_raw_record(),
-        source_index=0,
-        raw_data_dir=raw_data_dir,
-        output_dir=tmp_path / "out",
+    samples = [
+        materialize_omnidocbench_sample(
+            raw_record=record,
+            source_index=index,
+            raw_data_dir=raw_data_dir,
+        )
+        for index, record in enumerate(records)
+    ]
+
+    manifest_path = tmp_path / "sample_manifest.jsonl"
+    save_manifest(samples, manifest_path)
+
+    loaded = iter_omnidocbench_samples_from_manifest(manifest_path, limit=1)
+
+    assert len(loaded) == 1
+    assert loaded[0].image_filename == "page-a.png"
+
+
+def test_default_manifest_path_uses_sample_manifest_name(tmp_path: Path) -> None:
+    assert default_manifest_path(output_dir=tmp_path) == (
+        tmp_path / "sample_manifest.jsonl"
     )
 
-    record = sample.to_manifest_record()
 
-    serialized = json.dumps(record)
-    round_tripped = json.loads(serialized)
-
-    assert round_tripped["sample_id"] == sample.sample_id
-    assert round_tripped["pdf_path_digital"] == str(sample.pdf_path_digital)
-    assert round_tripped["pdf_path_scanned"] == str(sample.pdf_path_scanned)
-    assert round_tripped["has_table"] is True
-    assert round_tripped["has_formula"] is True
-
-
-def test_save_and_load_manifest_with_limit(tmp_path: Path) -> None:
+def test_materialize_omnidocbench_dataset_uses_existing_local_files(
+    tmp_path: Path,
+) -> None:
     raw_data_dir = tmp_path / "raw"
-    create_fake_pdf_folders(raw_data_dir)
+    output_dir = tmp_path / "prepared"
+    write_fake_raw_dataset(raw_data_dir)
 
-    sample_1 = materialize_omnidocbench_sample(
-        raw_record=make_fake_raw_record(),
-        source_index=0,
+    samples = materialize_omnidocbench_dataset(
         raw_data_dir=raw_data_dir,
-        output_dir=tmp_path / "out",
-    )
-
-    raw_record_2 = make_fake_raw_record()
-    raw_record_2["page_info"]["image_path"] = "page-test-002.png"
-
-    (raw_data_dir / "pdfs" / "page-test-002.pdf").write_bytes(FAKE_PDF_BYTES)
-    (raw_data_dir / "ori_pdfs" / "page-test-002.pdf").write_bytes(FAKE_PDF_BYTES)
-
-    sample_2 = materialize_omnidocbench_sample(
-        raw_record=raw_record_2,
-        source_index=1,
-        raw_data_dir=raw_data_dir,
-        output_dir=tmp_path / "out",
-    )
-
-    manifest_path = tmp_path / "manifest.jsonl"
-
-    save_manifest(
-        samples=[sample_1, sample_2],
-        manifest_path=manifest_path,
-    )
-
-    loaded_samples = iter_omnidocbench_samples_from_manifest(
-        manifest_path=manifest_path,
+        output_dir=output_dir,
         limit=1,
+        download_images=False,
     )
 
-    assert len(loaded_samples) == 1
-    assert loaded_samples[0].sample_id == sample_1.sample_id
-    assert loaded_samples[0].image_filename == "page-test-001.png"
-    assert loaded_samples[0].has_table is True
-
-
-def test_sample_from_manifest_record_restores_paths_and_fields(tmp_path: Path) -> None:
-    record = {
-        "sample_id": "omnidocbench_000123_test",
-        "source_index": 123,
-        "image_filename": "page-test-123.png",
-        "pdf_path_digital": str(tmp_path / "ori_pdfs" / "page-test-123.pdf"),
-        "pdf_path_scanned": str(tmp_path / "pdfs" / "page-test-123.pdf"),
-        "gt_layout_dets": [{"category_type": "text_block"}],
-        "gt_text_blocks": [{"category_type": "text_block"}],
-        "gt_tables": [],
-        "gt_reading_order": [{"anno_id": "box_1", "order": 1}],
-        "gt_bboxes_xyxy": [[1, 2, 3, 4]],
-        "gt_bboxes_raw_poly": [[1, 2, 3, 2, 3, 4, 1, 4]],
-        "page_width": 1000,
-        "page_height": 2000,
-        "data_source": "book",
-        "language": "english",
-        "layout": "single_column",
-        "special_issues": ["watermark"],
-        "has_table": False,
-        "has_formula": False,
-        "has_figure": False,
-        "metadata": {"dataset_slug": "opendatalab/OmniDocBench"},
-    }
-
-    sample = sample_from_manifest_record(record)
-
-    assert sample.sample_id == "omnidocbench_000123_test"
-    assert sample.source_index == 123
-    assert sample.image_filename == "page-test-123.png"
-    assert sample.pdf_path_digital == tmp_path / "ori_pdfs" / "page-test-123.pdf"
-    assert sample.pdf_path_scanned == tmp_path / "pdfs" / "page-test-123.pdf"
-    assert sample.gt_bboxes_xyxy == [[1.0, 2.0, 3.0, 4.0]]
-    assert sample.page_width == 1000.0
-    assert sample.page_height == 2000.0
-    assert sample.special_issues == ["watermark"]
-
-
-def test_load_gt_json_reads_list(tmp_path: Path) -> None:
-    raw_data_dir = tmp_path / "raw"
-    raw_data_dir.mkdir(parents=True)
-
-    gt_path = raw_data_dir / "OmniDocBench.json"
-    gt_path.write_text(json.dumps([make_fake_raw_record()]), encoding="utf-8")
-
-    data = load_gt_json(raw_data_dir)
-
-    assert isinstance(data, list)
-    assert len(data) == 1
-    assert data[0]["page_info"]["image_path"] == "page-test-001.png"
+    assert len(samples) == 1
+    assert samples[0].image_path.exists()
+    assert (output_dir / "sample_manifest.jsonl").exists()
 
 
 def test_prepare_omnidocbench_uses_existing_local_files(tmp_path: Path) -> None:
     raw_data_dir = tmp_path / "raw"
-    create_fake_pdf_folders(raw_data_dir)
-
-    gt_path = raw_data_dir / "OmniDocBench.json"
-    gt_path.write_text(json.dumps([make_fake_raw_record()]), encoding="utf-8")
+    output_dir = tmp_path / "prepared"
+    write_fake_raw_dataset(raw_data_dir)
 
     manifest_path = prepare_omnidocbench(
         raw_data_dir=raw_data_dir,
-        output_dir=tmp_path / "out",
+        output_dir=output_dir,
         limit=1,
+        download_images=False,
     )
 
+    assert manifest_path == output_dir / "sample_manifest.jsonl"
     assert manifest_path.exists()
 
-    samples = iter_omnidocbench_samples_from_manifest(
-        manifest_path=manifest_path,
-        limit=1,
-    )
-
+    samples = iter_omnidocbench_samples_from_manifest(manifest_path)
     assert len(samples) == 1
-    assert samples[0].image_filename == "page-test-001.png"
-    assert samples[0].pdf_path_digital.exists()
-    assert samples[0].pdf_path_scanned.exists()
+    assert samples[0].prediction_filename.endswith(".md")
