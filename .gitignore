@@ -51,3 +51,5 @@ data/
 # Large/intermediate formats
 *.jsonl
 *.jsonl.gz
+# Generated benchmark datasets, predictions, temp PDFs, and official eval outputs
+benchmarks/
