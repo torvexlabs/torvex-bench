@@ -40,6 +40,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -246,12 +247,56 @@ def read_official_metrics(result_path: str | Path) -> dict[str, Any]:
     return json.loads(result_path.read_text(encoding="utf-8"))
 
 
+def clean_omnidocbench_work_dir(work_dir: str | Path) -> None:
+    """
+    Clean generated OmniDocBench run artifacts while keeping gt_dataset.
+
+    We keep:
+        gt_dataset/
+            OmniDocBench.json
+            images/
+            sample_manifest.jsonl
+
+    We remove:
+        predictions/
+        temp_pdfs/
+        raw_outputs/
+        normalized/
+        result/
+        config.yaml
+        summary.json
+        omnidocbench_eval_stdout.log
+        omnidocbench_eval_stderr.log
+    """
+    work_dir = Path(work_dir)
+
+    for child_name in [
+        "predictions",
+        "temp_pdfs",
+        "raw_outputs",
+        "normalized",
+        "result",
+    ]:
+        child = work_dir / child_name
+        if child.exists():
+            shutil.rmtree(child)
+
+    for file_name in [
+        "config.yaml",
+        "summary.json",
+        "omnidocbench_eval_stdout.log",
+        "omnidocbench_eval_stderr.log",
+    ]:
+        path = work_dir / file_name
+        if path.exists():
+            path.unlink()
+
+
 def run_official_omnidocbench(
     *,
     work_dir: Path = DEFAULT_WORK_DIR,
     limit: int = 3,
-    overwrite: bool = False,
-    save_raw: bool = False,
+    clean: bool = True,
     save_normalized: bool = False,
     device: str = "cpu",
     eval_bin: str | Path | None = None,
@@ -270,6 +315,10 @@ def run_official_omnidocbench(
     This is the function the CLI will call.
     """
     work_dir = Path(work_dir)
+
+    if clean:
+        clean_omnidocbench_work_dir(work_dir)
+
     gt_dir = work_dir / "gt_dataset"
     predictions_dir = work_dir / "predictions" / DEFAULT_ENGINE_NAME
     gt_subset_path = gt_dir / f"OmniDocBench_subset_limit_{limit}.json"
@@ -277,14 +326,13 @@ def run_official_omnidocbench(
     summary_path = work_dir / "summary.json"
 
     prediction_summary: OmniDocBenchPredictionSummary = generate_omnidocbench_predictions(
-        work_dir=work_dir,
-        limit=limit,
-        overwrite=overwrite,
-        save_raw=save_raw,
-        save_normalized=save_normalized,
-        device=device,
-    )
-
+    work_dir=work_dir,
+    limit=limit,
+    overwrite=clean,
+    save_raw=False,
+    save_normalized=save_normalized,
+    device=device,
+)
     manifest_path = prepare_omnidocbench(
         raw_data_dir=gt_dir,
         output_dir=gt_dir,

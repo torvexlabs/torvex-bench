@@ -140,8 +140,7 @@ def official_omnidocbench_command(args: argparse.Namespace) -> int:
     summary = run_official_omnidocbench(
         limit=args.limit,
         work_dir=work_dir,
-        overwrite=args.overwrite,
-        save_raw=args.save_raw,
+        clean=args.clean,
         save_normalized=args.save_normalized,
         device=args.device,
         eval_bin=args.eval_bin,
@@ -291,15 +290,10 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     omnidocbench_parser.add_argument(
-        "--overwrite",
-        action="store_true",
-        help="Regenerate existing .md predictions instead of skipping them.",
-    )
-
-    omnidocbench_parser.add_argument(
-        "--save-raw",
-        action="store_true",
-        help="Debug only: save raw Torvex DocumentResult JSON next to predictions.",
+        "--clean",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Clean generated OmniDocBench outputs before running. Use --no-clean to keep them.",
     )
 
     omnidocbench_parser.add_argument(
