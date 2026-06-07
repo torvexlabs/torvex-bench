@@ -30,7 +30,14 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from torvex_bench.adapters.base import ExtractionAdapter, DocumentResult, PageResult, TableResult
+import torvex_extract
+
+from torvex_bench.adapters.base import (
+    DocumentResult,
+    ExtractionAdapter,
+    PageResult,
+    TableResult,
+)
 
 
 def get_formula_bboxes(page: dict[str, Any]) -> list[list[float]]:
@@ -188,27 +195,22 @@ def convert_document(
 
 
 class TorvexExtractAdapter(ExtractionAdapter):
-    """
-    Real Torvex Extract adapter.
-
-    Calls torvex-extract engine, then converts raw output
-    into benchmark DocumentResult.
-    """
-
     name = "torvex_extract"
     version = "0.1.0"
 
-    def __init__(self) -> None:
+    def __init__(self, device: str = "cpu") -> None:
+        if device not in {"cpu", "gpu"}:
+            raise ValueError("device must be 'cpu' or 'gpu'")
+
+        self.device = device
         self._warmed = False
 
     def _ensure_warmed(self) -> None:
         if self._warmed:
             return
 
-        from torvex_extract.visual_zoning import engine
-
-        if not engine.is_warmed():
-            engine.warm()
+        if not torvex_extract.is_warmed():
+            torvex_extract.warm(device=self.device)
 
         self._warmed = True
 
@@ -217,7 +219,7 @@ class TorvexExtractAdapter(ExtractionAdapter):
 
         from torvex_extract import extract_with_pypdfium2
 
-        pages, errors = extract_with_pypdfium2(str(pdf_path))
+        pages, errors = torvex_extract.extract_with_pypdfium2(str(pdf_path))
 
         raw_output = {
             "pdf": str(pdf_path),
