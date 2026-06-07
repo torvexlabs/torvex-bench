@@ -109,6 +109,63 @@ def official_doclaynet_command(args: argparse.Namespace) -> int:
     return 0 if rejected_total == 0 and prediction_errors == 0 else 1
 
 
+def official_omnidocbench_command(args: argparse.Namespace) -> int:
+    """
+    Run the official OmniDocBench scanned/image-page benchmark flow.
+
+    CLI responsibility:
+        - read parsed args
+        - call production official OmniDocBench runner
+        - print compact result
+        - return process exit code
+
+    Actual benchmark logic lives in:
+        torvex_bench.harnesses.official_omnidocbench
+
+    Locked scope:
+        - scanned/image-page path only
+        - text_block Edit_dist
+        - table TEDS
+        - reading_order Edit_dist
+        - formula CDM omitted
+        - COCO Det mAP omitted from this end-to-end path
+    """
+    from torvex_bench.harnesses.official_omnidocbench import (
+        DEFAULT_WORK_DIR,
+        run_official_omnidocbench,
+    )
+
+    work_dir = args.work_dir or DEFAULT_WORK_DIR
+
+    summary = run_official_omnidocbench(
+        limit=args.limit,
+        work_dir=work_dir,
+        overwrite=args.overwrite,
+        save_raw=args.save_raw,
+        save_normalized=args.save_normalized,
+        device=args.device,
+        eval_bin=args.eval_bin,
+    )
+
+    prediction_summary = summary.prediction_summary
+
+    print()
+    print("[torvex-bench] official OmniDocBench scanned result")
+    print(f"  limit                     = {summary.limit}")
+    print(f"  device                    = {args.device}")
+    print(f"  predictions_written       = {prediction_summary.get('predictions_written')}")
+    print(f"  empty_predictions_written = {prediction_summary.get('empty_predictions_written')}")
+    print(f"  skipped_existing          = {prediction_summary.get('skipped_existing')}")
+    print(f"  prediction_errors         = {prediction_summary.get('errors')}")
+    print(f"  official_result           = {summary.official_result_path}")
+    print(f"  official_run_summary      = {summary.official_run_summary_path}")
+    print(f"  summary                   = {summary.summary_path}")
+
+    prediction_errors = int(prediction_summary.get("errors") or 0)
+
+    return 0 if prediction_errors == 0 else 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     """
     Build the torvex-bench CLI parser.
@@ -210,6 +267,66 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     doclaynet_parser.set_defaults(func=official_doclaynet_command)
+
+    omnidocbench_parser = subparsers.add_parser(
+        "official-omnidocbench",
+        help="Run official OmniDocBench scanned/image-page end-to-end benchmark.",
+    )
+
+    omnidocbench_parser.add_argument(
+        "--limit",
+        type=positive_int,
+        default=3,
+        help="Number of OmniDocBench scanned/image samples to run.",
+    )
+
+    omnidocbench_parser.add_argument(
+        "--work-dir",
+        type=Path,
+        default=None,
+        help=(
+            "Generated benchmark work directory. "
+            "Default: benchmarks/omnidocbench/OmniDocBench_scanned"
+        ),
+    )
+
+    omnidocbench_parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Regenerate existing .md predictions instead of skipping them.",
+    )
+
+    omnidocbench_parser.add_argument(
+        "--save-raw",
+        action="store_true",
+        help="Debug only: save raw Torvex DocumentResult JSON next to predictions.",
+    )
+
+    omnidocbench_parser.add_argument(
+        "--save-normalized",
+        action="store_true",
+        help="Debug only: save normalized Torvex JSON next to predictions.",
+    )
+
+    omnidocbench_parser.add_argument(
+        "--device",
+        choices=["cpu", "gpu"],
+        default="cpu",
+        help="Torvex Extract ONNX inference device.",
+    )
+
+    omnidocbench_parser.add_argument(
+        "--eval-bin",
+        type=Path,
+        default=None,
+        help=(
+            "Path to omnidocbench-eval executable. "
+            "Default: data/venvs/omnidocbench/Scripts/omnidocbench-eval.exe "
+            "or OMNIDOCBENCH_EVAL_BIN."
+        ),
+    )
+
+    omnidocbench_parser.set_defaults(func=official_omnidocbench_command)
 
     return parser
 
