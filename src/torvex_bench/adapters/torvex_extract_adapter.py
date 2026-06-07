@@ -51,11 +51,7 @@ def get_formula_bboxes(page: dict[str, Any]) -> list[list[float]]:
     direct_bboxes = page.get("formula_bboxes") or []
 
     if direct_bboxes:
-        return [
-            [float(value) for value in bbox]
-            for bbox in direct_bboxes
-            if bbox is not None
-        ]
+        return _bboxes_to_float_lists(direct_bboxes)
 
     formula_bboxes: list[list[float]] = []
 
@@ -70,21 +66,44 @@ def get_formula_bboxes(page: dict[str, Any]) -> list[list[float]]:
         if bbox is None:
             continue
 
-        formula_bboxes.append([float(value) for value in bbox])
+        clean_bbox = _bbox_to_float_list(bbox)
+        if clean_bbox is not None:
+            formula_bboxes.append(clean_bbox)
 
     return formula_bboxes
 
 
 def _bbox_to_float_list(bbox: Any) -> list[float] | None:
     """
-    Convert a raw bbox into a list of floats.
+    Convert a raw bbox into [x0, y0, x1, y1] floats.
 
-    Missing bbox stays None.
+    Accepts:
+        [x0, y0, x1, y1]
+        {"bbox": [...]}
+        {"bbox_pdfium": [...]}
+        {"bbox_px": [...]}
+        {"box": [...]}
+
+    Invalid bbox values are ignored instead of crashing the whole benchmark.
     """
     if bbox is None:
         return None
 
-    return [float(value) for value in bbox]
+    if isinstance(bbox, dict):
+        for key in ("bbox_pdfium", "bbox", "bbox_px", "box"):
+            if key in bbox:
+                return _bbox_to_float_list(bbox.get(key))
+        return None
+
+    try:
+        values = [float(value) for value in bbox]
+    except (TypeError, ValueError):
+        return None
+
+    if len(values) != 4:
+        return None
+
+    return values
 
 
 def _bboxes_to_float_lists(bboxes: Any) -> list[list[float]]:

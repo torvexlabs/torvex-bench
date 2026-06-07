@@ -272,3 +272,31 @@ def test_torvex_extract_adapter_imports():
     assert adapter.version == "0.1.0"
     assert callable(adapter.extract)
     assert callable(adapter.extract_document)
+
+
+def test_get_formula_bboxes_accepts_dict_entries() -> None:
+    page = {
+        "formula_bboxes": [
+            {
+                "formula_id": "f1",
+                "bbox": [1, 2, 3, 4],
+            },
+            {
+                "formula_id": "bad",
+            },
+        ]
+    }
+
+    assert get_formula_bboxes(page) == [[1.0, 2.0, 3.0, 4.0]]
+    
+
+def test_get_formula_bboxes_ignores_invalid_entries() -> None:
+    page = {
+        "formula_bboxes": [
+            {"formula_id": "f1"},
+            ["formula_id"],
+            None,
+        ]
+    }
+
+    assert get_formula_bboxes(page) == []

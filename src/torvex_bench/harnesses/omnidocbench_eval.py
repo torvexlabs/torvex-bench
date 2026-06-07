@@ -30,6 +30,8 @@ Official evaluator wrapper comes later in:
 
 from __future__ import annotations
 
+import traceback
+
 import json
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -172,6 +174,8 @@ def generate_omnidocbench_predictions_from_samples(
     """
     prediction_dir.mkdir(parents=True, exist_ok=True)
     temp_pdfs_dir.mkdir(parents=True, exist_ok=True)
+    error_dir = prediction_dir.parent / "errors" / "torvex_extract"
+    error_dir.mkdir(parents=True, exist_ok=True)
 
     if save_raw:
         raw_dir = raw_dir or prediction_dir.parent / "raw_outputs"
@@ -220,7 +224,22 @@ def generate_omnidocbench_predictions_from_samples(
 
         except Exception as exc:
             errors += 1
+            traceback_text = traceback.format_exc()
+
             print(f"[ERROR] {sample.sample_id} {sample.image_filename}: {exc}")
+
+            _write_json(
+                error_dir / f"{sample.image_stem}.error.json",
+                {
+                    "sample_id": sample.sample_id,
+                    "image_filename": sample.image_filename,
+                    "image_path": str(sample.image_path),
+                    "prediction_filename": sample.prediction_filename,
+                    "error_type": type(exc).__name__,
+                    "error": str(exc),
+                    "traceback": traceback_text,
+                },
+            )
 
             if save_raw and raw_dir is not None:
                 _write_json(
@@ -228,7 +247,9 @@ def generate_omnidocbench_predictions_from_samples(
                     {
                         "sample_id": sample.sample_id,
                         "image_filename": sample.image_filename,
+                        "error_type": type(exc).__name__,
                         "error": str(exc),
+                        "traceback": traceback_text,
                     },
                 )
 

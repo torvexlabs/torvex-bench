@@ -228,12 +228,19 @@ def run_official_omnidocbench_eval(
         str(Path(config_path).resolve()),
     ]
 
+    env = os.environ.copy()
+    env.setdefault("PYTHONIOENCODING", "utf-8")
+    env.setdefault("PYTHONUTF8", "1")
+
     return subprocess.run(
         command,
         cwd=Path(work_dir),
         text=True,
+        encoding="utf-8",
+        errors="replace",
         capture_output=True,
         check=False,
+        env=env,
     )
 
 
