@@ -89,11 +89,17 @@ def test_bench_data_and_manifest_paths(tmp_path: Path) -> None:
     work_dir = tmp_path / "olmocr"
 
     assert m.bench_data_dir(work_dir) == work_dir / "bench_data"
-    assert m.default_manifest_path(work_dir) == work_dir / "bench_data" / "sample_manifest.jsonl"
+
+    # Important: manifest must stay outside bench_data.
+    # Official olmOCR evaluator scans every *.jsonl inside bench_data.
+    assert m.default_manifest_path(work_dir) == work_dir / "sample_manifest.jsonl"
 
 
 def test_repo_and_local_paths(tmp_path: Path) -> None:
     work_dir = tmp_path / "olmocr"
+
+    assert m.local_pdf_alias("old_scans/1.pdf") == "old_scans__1.pdf"
+    assert m.local_pdf_alias(r"\old_scans\1.pdf") == "old_scans__1.pdf"
 
     assert m._repo_jsonl_path("old_scans.jsonl") == "bench_data/old_scans.jsonl"
     assert (
@@ -111,7 +117,7 @@ def test_repo_and_local_paths(tmp_path: Path) -> None:
     )
     assert (
         m._local_pdf_path("old_scans/1.pdf", work_dir=work_dir)
-        == work_dir / "bench_data" / "pdfs" / "old_scans" / "1.pdf"
+        == work_dir / "bench_data" / "pdfs" / "old_scans__1.pdf"
     )
 
 
@@ -167,19 +173,23 @@ def test_ordered_unique_pdfs_preserves_jsonl_order() -> None:
     ]
 
 
-def test_sample_prediction_filename_uses_official_pattern(tmp_path: Path) -> None:
+def test_sample_prediction_filename_uses_official_flat_alias_pattern(
+    tmp_path: Path,
+) -> None:
     sample = m.OlmOCRBenchSample(
         sample_id="olmocr_test",
-        pdf="old_scans/1.pdf",
-        local_pdf_path=tmp_path / "bench_data" / "pdfs" / "old_scans" / "1.pdf",
+        pdf="old_scans__1.pdf",
+        local_pdf_path=tmp_path / "bench_data" / "pdfs" / "old_scans__1.pdf",
         pages=[1],
         source_jsonls=["old_scans.jsonl"],
     )
 
-    assert sample.pdf_stem == "old_scans/1"
-    assert sample.prediction_filename == "old_scans/1_pg1_repeat1.md"
-    assert sample.prediction_filename_for_page(2) == "old_scans/1_pg2_repeat1.md"
-    assert sample.prediction_filename_for_page(2, repeat=3) == "old_scans/1_pg2_repeat3.md"
+    assert sample.pdf_stem == "old_scans__1"
+    assert sample.prediction_filename == "old_scans__1_pg1_repeat1.md"
+    assert sample.prediction_filename_for_page(2) == "old_scans__1_pg2_repeat1.md"
+    assert sample.prediction_filename_for_page(2, repeat=3) == (
+        "old_scans__1_pg2_repeat3.md"
+    )
 
 
 def test_build_samples_groups_pages_and_source_jsonls(tmp_path: Path) -> None:
@@ -204,18 +214,22 @@ def test_build_samples_groups_pages_and_source_jsonls(tmp_path: Path) -> None:
     assert len(samples) == 2
 
     first = samples[0]
-    assert first.pdf == "old_scans/1.pdf"
+    assert first.pdf == "old_scans__1.pdf"
+    assert first.metadata["original_pdf"] == "old_scans/1.pdf"
+    assert first.metadata["local_pdf_alias"] == "old_scans__1.pdf"
     assert first.pages == [1]
     assert first.source_jsonls == ["old_scans.jsonl", "multi_column.jsonl"]
-    assert first.local_pdf_path == work_dir / "bench_data" / "pdfs" / "old_scans" / "1.pdf"
+    assert first.local_pdf_path == (
+        work_dir / "bench_data" / "pdfs" / "old_scans__1.pdf"
+    )
     assert first.metadata["dataset_slug"] == m.DATASET_SLUG
 
 
 def test_manifest_roundtrip(tmp_path: Path) -> None:
     sample = m.OlmOCRBenchSample(
         sample_id="olmocr_test",
-        pdf="old_scans/1.pdf",
-        local_pdf_path=tmp_path / "bench_data" / "pdfs" / "old_scans" / "1.pdf",
+        pdf="old_scans__1.pdf",
+        local_pdf_path=tmp_path / "bench_data" / "pdfs" / "old_scans__1.pdf",
         pages=[1],
         source_jsonls=["old_scans.jsonl"],
         metadata={"x": "y"},
@@ -231,7 +245,7 @@ def test_manifest_roundtrip(tmp_path: Path) -> None:
 
     assert len(loaded) == 1
     assert loaded[0].sample_id == sample.sample_id
-    assert loaded[0].pdf == "old_scans/1.pdf"
+    assert loaded[0].pdf == "old_scans__1.pdf"
     assert loaded[0].local_pdf_path == sample.local_pdf_path
     assert loaded[0].pages == [1]
     assert loaded[0].source_jsonls == ["old_scans.jsonl"]
@@ -242,12 +256,12 @@ def test_iter_manifest_respects_limit(tmp_path: Path) -> None:
     samples = [
         m.OlmOCRBenchSample(
             sample_id="a",
-            pdf="old_scans/1.pdf",
+            pdf="old_scans__1.pdf",
             local_pdf_path=tmp_path / "a.pdf",
         ),
         m.OlmOCRBenchSample(
             sample_id="b",
-            pdf="old_scans/2.pdf",
+            pdf="old_scans__2.pdf",
             local_pdf_path=tmp_path / "b.pdf",
         ),
     ]
@@ -307,19 +321,22 @@ def test_prepare_olmocr_bench_rewrites_subset_jsonls_and_selects_pdfs(
         download_pdfs=True,
     )
 
-    assert manifest_path == work_dir / "bench_data" / "sample_manifest.jsonl"
+    assert manifest_path == work_dir / "sample_manifest.jsonl"
 
+    # Download still uses original official repo path.
     assert downloaded_pdfs == ["old_scans/1.pdf"]
 
+    # Local scoring JSONLs are rewritten to flat aliases for Windows-safe official eval.
     old_scan_records = m.read_jsonl_records(work_dir / "bench_data" / "old_scans.jsonl")
     table_records = m.read_jsonl_records(work_dir / "bench_data" / "table_tests.jsonl")
 
-    assert [row["pdf"] for row in old_scan_records] == ["old_scans/1.pdf"]
-    assert [row["pdf"] for row in table_records] == ["old_scans/1.pdf"]
+    assert [row["pdf"] for row in old_scan_records] == ["old_scans__1.pdf"]
+    assert [row["pdf"] for row in table_records] == ["old_scans__1.pdf"]
 
     samples = m.iter_olmocr_samples_from_manifest(manifest_path)
     assert len(samples) == 1
-    assert samples[0].pdf == "old_scans/1.pdf"
+    assert samples[0].pdf == "old_scans__1.pdf"
+    assert samples[0].metadata["original_pdf"] == "old_scans/1.pdf"
 
 
 def test_prepare_olmocr_bench_rejects_invalid_limit(tmp_path: Path) -> None:

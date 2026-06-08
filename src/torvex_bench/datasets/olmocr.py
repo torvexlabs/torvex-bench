@@ -156,6 +156,22 @@ class OlmOCRBenchSample:
         }
 
 
+def local_pdf_alias(pdf: str) -> str:
+    """
+    Return a flat local PDF filename for official evaluator compatibility.
+
+    Official JSONL may store:
+        headers_footers/file.pdf
+
+    Locally we rewrite it to:
+        headers_footers__file.pdf
+
+    This avoids Windows relpath separator mismatches in olmOCR-Bench.
+    """
+    normalized = str(pdf).replace("\\", "/").lstrip("/")
+    return normalized.replace("/", "__")
+
+
 def jsonl_files_for_track(track: str = DEFAULT_TRACK) -> list[str]:
     if track == TRACK_NON_MATH:
         return list(JSONL_FILES_NON_MATH)
@@ -174,7 +190,7 @@ def bench_data_dir(work_dir: str | Path = DEFAULT_WORK_DIR) -> Path:
 
 
 def default_manifest_path(work_dir: str | Path = DEFAULT_WORK_DIR) -> Path:
-    return bench_data_dir(work_dir) / "sample_manifest.jsonl"
+    return Path(work_dir) / "sample_manifest.jsonl"
 
 
 def _repo_jsonl_path(jsonl_name: str) -> str:
@@ -191,7 +207,7 @@ def _local_jsonl_path(jsonl_name: str, *, work_dir: str | Path = DEFAULT_WORK_DI
 
 
 def _local_pdf_path(pdf: str, *, work_dir: str | Path = DEFAULT_WORK_DIR) -> Path:
-    return bench_data_dir(work_dir) / "pdfs" / Path(str(pdf).replace("\\", "/"))
+    return bench_data_dir(work_dir) / "pdfs" / local_pdf_alias(pdf)
 
 
 def make_sample_id(pdf: str) -> str:
@@ -327,16 +343,20 @@ def _build_samples(
             if matched:
                 source_jsonls.append(jsonl_name)
 
+        pdf_alias = local_pdf_alias(pdf)
+
         samples.append(
             OlmOCRBenchSample(
                 sample_id=make_sample_id(pdf),
-                pdf=pdf,
+                pdf=pdf_alias,
                 local_pdf_path=_local_pdf_path(pdf, work_dir=work_dir),
                 pages=sorted(pages) or [1],
                 source_jsonls=source_jsonls,
                 metadata={
                     "dataset_slug": DATASET_SLUG,
                     "dataset_revision": DATASET_REVISION,
+                    "original_pdf": pdf,
+                    "local_pdf_alias": pdf_alias,
                     "selected": pdf in selected_pdf_set,
                 },
             )
@@ -459,11 +479,18 @@ def prepare_olmocr_bench(
     # Rewrite selected JSONLs in-place so official evaluator scores only the
     # selected PDF subset. This is important for smoke runs.
     for jsonl_name, records in records_by_jsonl.items():
-        subset_records = [
-            record
-            for record in records
-            if str(record["pdf"]).replace("\\", "/").lstrip("/") in selected_pdf_set
-        ]
+        subset_records = []
+
+        for record in records:
+            original_pdf = str(record["pdf"]).replace("\\", "/").lstrip("/")
+
+            if original_pdf not in selected_pdf_set:
+                continue
+
+            clean_record = dict(record)
+            clean_record["pdf"] = local_pdf_alias(original_pdf)
+            subset_records.append(clean_record)
+
         write_jsonl_records(data_dir / jsonl_name, subset_records)
 
     if download_pdfs:
