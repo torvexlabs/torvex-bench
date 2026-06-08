@@ -165,6 +165,64 @@ def official_omnidocbench_command(args: argparse.Namespace) -> int:
     return 0 if prediction_errors == 0 else 1
 
 
+def official_olmocr_command(args: argparse.Namespace) -> int:
+    """
+    Run the official olmOCR-Bench benchmark flow.
+
+    CLI responsibility:
+        - read parsed args
+        - call production official olmOCR runner
+        - print compact result
+        - return process exit code
+
+    Actual benchmark logic lives in:
+        torvex_bench.harnesses.official_olmocr
+
+    Scope:
+        - default track is non_math
+        - math/full tracks are explicit diagnostics
+        - official evaluator computes unit-test pass rate
+    """
+    from torvex_bench.harnesses.official_olmocr import (
+        DEFAULT_WORK_DIR,
+        run_official_olmocr,
+    )
+
+    work_dir = args.work_dir or DEFAULT_WORK_DIR
+
+    summary = run_official_olmocr(
+        limit=args.limit,
+        work_dir=work_dir,
+        track=args.track,
+        clean=args.clean,
+        save_normalized=args.save_normalized,
+        device=args.device,
+        python_bin=args.python_bin,
+    )
+
+    prediction_summary = summary.prediction_summary
+
+    print()
+    print("[torvex-bench] official olmOCR-Bench result")
+    print(f"  limit                     = {summary.limit}")
+    print(f"  track                     = {summary.track}")
+    print(f"  device                    = {summary.device}")
+    print(f"  predictions_written       = {prediction_summary.get('predictions_written')}")
+    print(f"  empty_predictions_written = {prediction_summary.get('empty_predictions_written')}")
+    print(f"  skipped_existing          = {prediction_summary.get('skipped_existing')}")
+    print(f"  prediction_errors         = {prediction_summary.get('errors')}")
+    print(f"  eval_returncode           = {summary.eval_returncode}")
+    print(f"  average_score             = {summary.average_score}")
+    print(f"  total_tests               = {summary.total_tests}")
+    print(f"  summary                   = {summary.summary_path}")
+    print(f"  stdout                    = {summary.stdout_path}")
+    print(f"  stderr                    = {summary.stderr_path}")
+
+    prediction_errors = int(prediction_summary.get("errors") or 0)
+
+    return 0 if prediction_errors == 0 and summary.eval_returncode == 0 else 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     """
     Build the torvex-bench CLI parser.
@@ -321,6 +379,70 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     omnidocbench_parser.set_defaults(func=official_omnidocbench_command)
+
+    olmocr_parser = subparsers.add_parser(
+        "official-olmocr",
+        help="Run official olmOCR-Bench unit-test benchmark.",
+    )
+
+    olmocr_parser.add_argument(
+        "--limit",
+        type=positive_int,
+        default=3,
+        help="Number of olmOCR-Bench PDF samples to run.",
+    )
+
+    olmocr_parser.add_argument(
+        "--track",
+        choices=["non_math", "math", "full"],
+        default="non_math",
+        help=(
+            "olmOCR-Bench track. "
+            "Default non_math excludes arxiv_math and old_scans_math."
+        ),
+    )
+
+    olmocr_parser.add_argument(
+        "--work-dir",
+        type=Path,
+        default=None,
+        help=(
+            "Generated benchmark work directory. "
+            "Default: benchmarks/olmocr/olmOCR_Bench_non_math"
+        ),
+    )
+
+    olmocr_parser.add_argument(
+        "--clean",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Clean generated olmOCR outputs before running. Use --no-clean to keep them.",
+    )
+
+    olmocr_parser.add_argument(
+        "--save-normalized",
+        action="store_true",
+        help="Debug only: save normalized Torvex JSON next to predictions.",
+    )
+
+    olmocr_parser.add_argument(
+        "--device",
+        choices=["cpu", "gpu"],
+        default="cpu",
+        help="Torvex Extract ONNX inference device.",
+    )
+
+    olmocr_parser.add_argument(
+        "--python-bin",
+        type=Path,
+        default=None,
+        help=(
+            "Path to isolated olmOCR Python executable. "
+            "Default: data/venvs/olmocr/Scripts/python.exe or OLMOCR_PYTHON."
+        ),
+    )
+
+    olmocr_parser.set_defaults(func=official_olmocr_command)
 
     return parser
 
