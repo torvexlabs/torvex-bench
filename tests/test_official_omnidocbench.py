@@ -96,3 +96,44 @@ def test_read_official_metrics_reads_json(tmp_path: Path) -> None:
 def test_resolve_omnidocbench_eval_bin_accepts_explicit_path(tmp_path: Path) -> None:
     explicit = tmp_path / "omnidocbench-eval"
     assert resolve_omnidocbench_eval_bin(explicit) == explicit
+
+
+def test_write_official_omnidocbench_config_includes_formula_cdm_when_enabled(tmp_path) -> None:
+    from torvex_bench.harnesses.official_omnidocbench import (
+        write_official_omnidocbench_config,
+    )
+
+    config_path = tmp_path / "config.yaml"
+
+    write_official_omnidocbench_config(
+        config_path=config_path,
+        gt_json_path=tmp_path / "gt.json",
+        predictions_dir=tmp_path / "predictions",
+        enable_formula_cdm=True,
+    )
+
+    text = config_path.read_text(encoding="utf-8")
+
+    assert "display_formula:" in text
+    assert "- CDM" in text
+    assert "cdm_workers: 1" in text
+
+
+def test_write_official_omnidocbench_config_omits_formula_cdm_when_disabled(tmp_path) -> None:
+    from torvex_bench.harnesses.official_omnidocbench import (
+        write_official_omnidocbench_config,
+    )
+
+    config_path = tmp_path / "config.yaml"
+
+    write_official_omnidocbench_config(
+        config_path=config_path,
+        gt_json_path=tmp_path / "gt.json",
+        predictions_dir=tmp_path / "predictions",
+        enable_formula_cdm=False,
+    )
+
+    text = config_path.read_text(encoding="utf-8")
+
+    assert "display_formula:" not in text
+    assert "- CDM" not in text

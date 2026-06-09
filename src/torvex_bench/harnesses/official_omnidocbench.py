@@ -12,7 +12,7 @@ OmniDocBench is used as a scanned/image-page benchmark only.
 We do not use:
     - ori_pdfs/
     - digital PDF mode
-    - formula CDM
+    - formula CDM is enabled when formula extraction is enabled
     - COCO Det mAP in this path
 
 This wrapper evaluates:
@@ -155,11 +155,12 @@ def write_official_omnidocbench_config(
     predictions_dir: str | Path,
     match_workers: int = 1,
     teds_workers: int = 1,
+    enable_formula_cdm: bool = False,
 ) -> Path:
     """
     Write official omnidocbench-eval config.yaml.
 
-    Formula CDM is intentionally omitted.
+    Formula CDM is included when enable_formula_cdm=True.
 
     COCO Det mAP is intentionally not included here because this is the
     end-to-end Markdown evaluation path, not the separate layout detection path.
@@ -170,6 +171,15 @@ def write_official_omnidocbench_config(
     gt_path = _json_safe_path(Path(gt_json_path))
     pred_path = _json_safe_path(Path(predictions_dir))
 
+    formula_metric_block = ""
+
+    if enable_formula_cdm:
+        formula_metric_block = f"""    display_formula:
+      metric:
+        - CDM
+      cdm_workers: {int(teds_workers)}
+"""
+
     config_text = f"""end2end_eval:
   metrics:
     text_block:
@@ -179,7 +189,7 @@ def write_official_omnidocbench_config(
       metric:
         - TEDS
       teds_workers: {int(teds_workers)}
-    reading_order:
+{formula_metric_block}    reading_order:
       metric:
         - Edit_dist
   dataset:
@@ -332,16 +342,18 @@ def run_official_omnidocbench(
     gt_subset_path = gt_dir / f"OmniDocBench_subset_limit_{limit}.json"
     config_path = work_dir / "config.yaml"
     summary_path = work_dir / "summary.json"
+    
+    actual_enable_formula = True if enable_formula is None else enable_formula
 
     prediction_summary: OmniDocBenchPredictionSummary = generate_omnidocbench_predictions(
-    work_dir=work_dir,
-    limit=limit,
-    overwrite=clean,
-    save_raw=False,
-    save_normalized=save_normalized,
-    device=device,
-    enable_formula=enable_formula,
-)
+        work_dir=work_dir,
+        limit=limit,
+        overwrite=clean,
+        save_raw=False,
+        save_normalized=save_normalized,
+        device=device,
+        enable_formula=actual_enable_formula,
+    )
     manifest_path = prepare_omnidocbench(
         raw_data_dir=gt_dir,
         output_dir=gt_dir,
@@ -358,8 +370,8 @@ def run_official_omnidocbench(
         predictions_dir=predictions_dir,
         match_workers=1,
         teds_workers=1,
+        enable_formula_cdm=actual_enable_formula,
     )
-
     completed = run_official_omnidocbench_eval(
         config_path=config_path,
         work_dir=work_dir,
