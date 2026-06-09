@@ -30,12 +30,15 @@ Official evaluator wrapper comes later in:
 
 from __future__ import annotations
 
+import csv
+import os
+import time
 import traceback
 
 import json
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Protocol
+from typing import Any, Protocol
 
 from PIL import Image
 
@@ -105,6 +108,7 @@ class OmniDocBenchPredictionSummary:
     raw_dir: Path | None = None
     normalized_dir: Path | None = None
     formula_enabled: bool | None = None
+    page_memory_probe_path: Path | None = None
 
 
 def image_to_scanned_pdf(image_path: str | Path, pdf_path: str | Path) -> Path:
@@ -152,6 +156,16 @@ def _write_empty_prediction(prediction_path: Path) -> None:
     prediction_path.write_text("", encoding="utf-8")
 
 
+def _process_rss_mb() -> float | None:
+    """Return current process RSS memory in MB, best-effort."""
+    try:
+        import psutil
+
+        return round(psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024, 2)
+    except Exception:
+        return None
+
+
 def generate_omnidocbench_predictions_from_samples(
     *,
     samples: list[OmniDocBenchSample],
@@ -193,7 +207,10 @@ def generate_omnidocbench_predictions_from_samples(
     skipped_existing = 0
     errors = 0
 
-    for sample in samples:
+    page_memory_probe_path = prediction_dir.parent / "page_memory_probe.csv"
+    page_memory_rows: list[dict[str, Any]] = []
+
+    for page_index, sample in enumerate(samples, start=1):
         prediction_path = prediction_dir / sample.prediction_filename
 
         if prediction_path.exists() and not overwrite:
@@ -201,6 +218,11 @@ def generate_omnidocbench_predictions_from_samples(
             continue
 
         processed += 1
+
+        page_start = time.perf_counter()
+        rss_before_mb = _process_rss_mb()
+        status = "success"
+        error_type = ""
 
         try:
             pdf_path = temp_pdfs_dir / f"{sample.image_stem}.pdf"
@@ -224,6 +246,8 @@ def generate_omnidocbench_predictions_from_samples(
             predictions_written += 1
 
         except Exception as exc:
+            status = "error"
+            error_type = type(exc).__name__
             errors += 1
             traceback_text = traceback.format_exc()
 
@@ -258,6 +282,33 @@ def generate_omnidocbench_predictions_from_samples(
                 _write_empty_prediction(prediction_path)
                 empty_predictions_written += 1
 
+        rss_after_mb = _process_rss_mb()
+        page_memory_rows.append(
+            {
+                "page_index": page_index,
+                "sample_id": sample.sample_id,
+                "image_filename": sample.image_filename,
+                "prediction_filename": sample.prediction_filename,
+                "status": status,
+                "error_type": error_type,
+                "page_elapsed_ms": round((time.perf_counter() - page_start) * 1000, 3),
+                "rss_before_mb": rss_before_mb,
+                "rss_after_mb": rss_after_mb,
+                "rss_delta_mb": (
+                    round(rss_after_mb - rss_before_mb, 2)
+                    if rss_after_mb is not None and rss_before_mb is not None
+                    else None
+                ),
+            }
+        )
+
+    if page_memory_rows:
+        page_memory_probe_path.parent.mkdir(parents=True, exist_ok=True)
+        with page_memory_probe_path.open("w", encoding="utf-8", newline="") as file:
+            writer = csv.DictWriter(file, fieldnames=list(page_memory_rows[0].keys()))
+            writer.writeheader()
+            writer.writerows(page_memory_rows)
+
     return OmniDocBenchPredictionSummary(
         requested=requested,
         processed=processed,
@@ -269,6 +320,7 @@ def generate_omnidocbench_predictions_from_samples(
         temp_pdfs_dir=temp_pdfs_dir,
         raw_dir=raw_dir if save_raw else None,
         normalized_dir=normalized_dir if save_normalized else None,
+        page_memory_probe_path=page_memory_probe_path if page_memory_rows else None,
     )
 
 
