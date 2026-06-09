@@ -56,3 +56,6 @@ benchmarks/
 
 # Temporary tuning/debug workspace
 _tuning/
+
+# Local patch backups
+*.bak_*
