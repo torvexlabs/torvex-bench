@@ -42,6 +42,7 @@ import json
 import os
 import shutil
 import subprocess
+import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -77,6 +78,7 @@ class OfficialOmniDocBenchSummary:
     summary_path: Path
     eval_returncode: int
     prediction_summary: dict[str, Any]
+    phase_timings_sec: dict[str, float]
     metrics: dict[str, Any]
 
 
@@ -334,8 +336,19 @@ def run_official_omnidocbench(
     """
     work_dir = Path(work_dir)
 
+    phase_timings: dict[str, float] = {}
+    total_start = time.perf_counter()
+    phase_start = total_start
+
+    def mark_phase(name: str) -> None:
+        nonlocal phase_start
+        now = time.perf_counter()
+        phase_timings[name] = round(now - phase_start, 3)
+        phase_start = now
+
     if clean:
         clean_omnidocbench_work_dir(work_dir)
+    mark_phase("clean")
 
     gt_dir = work_dir / "gt_dataset"
     predictions_dir = work_dir / "predictions" / DEFAULT_ENGINE_NAME
@@ -354,35 +367,45 @@ def run_official_omnidocbench(
         device=device,
         enable_formula=actual_enable_formula,
     )
+    mark_phase("prediction_generation")
+
     manifest_path = prepare_omnidocbench(
         raw_data_dir=gt_dir,
         output_dir=gt_dir,
         limit=limit,
         download_images=True,
     )
+    mark_phase("prepare_manifest")
+
     samples = iter_omnidocbench_samples_from_manifest(manifest_path, limit=limit)
 
     write_subset_gt_json(samples, gt_subset_path)
+    mark_phase("write_subset_gt")
 
     write_official_omnidocbench_config(
         config_path=config_path,
         gt_json_path=gt_subset_path,
         predictions_dir=predictions_dir,
-        match_workers=1,
-        teds_workers=1,
+        match_workers=4,
+        teds_workers=4,
         enable_formula_cdm=actual_enable_formula,
     )
+    mark_phase("write_config")
+
     completed = run_official_omnidocbench_eval(
         config_path=config_path,
         work_dir=work_dir,
         eval_bin=eval_bin,
     )
+    mark_phase("official_eval")
 
     save_name = f"{predictions_dir.name}_quick_match"
     official_result_path = work_dir / "result" / f"{save_name}_metric_result.json"
     official_run_summary_path = work_dir / "result" / f"{save_name}_run_summary.json"
 
     metrics = read_official_metrics(official_result_path)
+    mark_phase("read_metrics")
+    phase_timings["total"] = round(time.perf_counter() - total_start, 3)
 
     summary = OfficialOmniDocBenchSummary(
         dataset="OmniDocBench_scanned",
@@ -397,6 +420,7 @@ def run_official_omnidocbench(
         summary_path=summary_path,
         eval_returncode=int(completed.returncode),
         prediction_summary=asdict(prediction_summary),
+        phase_timings_sec=phase_timings,
         metrics=metrics,
     )
 
