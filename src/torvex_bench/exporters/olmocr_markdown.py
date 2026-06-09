@@ -46,6 +46,18 @@ def _clean_text(value: Any) -> str:
     return str(value).replace("\r\n", "\n").replace("\r", "\n").strip()
 
 
+def _clean_latex_block(value: Any) -> str:
+    latex = _clean_text(value)
+
+    if latex.startswith("$$") and latex.endswith("$$") and len(latex) >= 4:
+        latex = latex[2:-2].strip()
+
+    if latex.startswith("\\[") and latex.endswith("\\]"):
+        latex = latex[2:-2].strip()
+
+    return latex
+
+
 def table_rows_to_html(rows: list[list[Any]]) -> str:
     """
     Convert rows[][] into a simple HTML table.
@@ -77,6 +89,23 @@ def table_rows_to_html(rows: list[list[Any]]) -> str:
     return "\n".join(html_lines)
 
 
+def formula_to_markdown(formula: dict[str, Any]) -> str:
+    formula_type = str(formula.get("type") or "")
+    status = str(formula.get("status") or "")
+    latex = _clean_latex_block(formula.get("latex"))
+
+    if formula_type != "display_formula":
+        return ""
+
+    if status not in {"accepted", "low_confidence"}:
+        return ""
+
+    if not latex:
+        return ""
+
+    return f"$$\n{latex}\n$$"
+
+
 def normalized_page_to_markdown(page: dict[str, Any]) -> str:
     """
     Convert one normalized page dictionary into olmOCR-Bench Markdown.
@@ -92,6 +121,11 @@ def normalized_page_to_markdown(page: dict[str, Any]) -> str:
     text = _clean_text(page.get("text"))
     if text:
         blocks.append(text)
+    
+    for formula in page.get("formulas") or []:
+        formula_md = formula_to_markdown(formula)
+        if formula_md:
+            blocks.append(formula_md)
 
     for table in page.get("tables") or []:
         rows = table.get("rows") or []

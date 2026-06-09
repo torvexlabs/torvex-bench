@@ -245,6 +245,7 @@ def run_official_olmocr(
     save_normalized: bool = False,
     device: str = "cpu",
     python_bin: str | Path | None = None,
+    enable_formula: bool | None = None,
 ) -> OfficialOlmOCRSummary:
     """
     Generate Torvex predictions and run official olmOCR-Bench evaluation.
@@ -276,6 +277,7 @@ def run_official_olmocr(
         save_raw=False,
         save_normalized=save_normalized,
         device=device,
+        enable_formula=enable_formula,
     )
 
     data_dir = bench_data_dir(work_dir)

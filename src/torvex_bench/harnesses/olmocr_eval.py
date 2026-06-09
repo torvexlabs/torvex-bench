@@ -65,6 +65,7 @@ class OlmOCRPredictionSummary:
     prediction_dir: Path
     normalized_dir: Path | None = None
     raw_dir: Path | None = None
+    formula_enabled: bool | None = None
 
 
 def _write_json(path: Path, payload: dict | list) -> None:
@@ -216,6 +217,7 @@ def generate_olmocr_predictions(
     save_raw: bool = False,
     save_normalized: bool = False,
     device: str = "cpu",
+    enable_formula: bool | None = None,
 ) -> OlmOCRPredictionSummary:
     """
     Prepare olmOCR-Bench samples and generate Torvex Markdown predictions.
@@ -246,9 +248,19 @@ def generate_olmocr_predictions(
     raw_dir = data_dir / "raw_outputs" / DEFAULT_ENGINE_NAME
     normalized_dir = data_dir / "normalized" / DEFAULT_ENGINE_NAME
 
-    adapter = TorvexExtractAdapter(device=device)
+    default_enable_formula = track in {"math", "all", "full"}
+    actual_enable_formula = (
+        default_enable_formula
+        if enable_formula is None
+        else enable_formula
+    )
 
-    return generate_olmocr_predictions_from_samples(
+    adapter = TorvexExtractAdapter(
+        device=device,
+        enable_formula=actual_enable_formula,
+    )
+
+    summary = generate_olmocr_predictions_from_samples(
         samples=samples,
         prediction_dir=prediction_dir,
         adapter=adapter,
@@ -258,3 +270,6 @@ def generate_olmocr_predictions(
         save_normalized=save_normalized,
         normalized_dir=normalized_dir,
     )
+
+    summary.formula_enabled = actual_enable_formula
+    return summary

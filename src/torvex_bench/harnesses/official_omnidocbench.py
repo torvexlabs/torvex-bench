@@ -307,6 +307,7 @@ def run_official_omnidocbench(
     save_normalized: bool = False,
     device: str = "cpu",
     eval_bin: str | Path | None = None,
+    enable_formula: bool | None = None,
 ) -> OfficialOmniDocBenchSummary:
     """
     Generate Torvex predictions and run official OmniDocBench evaluation.
@@ -339,6 +340,7 @@ def run_official_omnidocbench(
     save_raw=False,
     save_normalized=save_normalized,
     device=device,
+    enable_formula=enable_formula,
 )
     manifest_path = prepare_omnidocbench(
         raw_data_dir=gt_dir,

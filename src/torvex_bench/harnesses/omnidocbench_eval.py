@@ -104,6 +104,7 @@ class OmniDocBenchPredictionSummary:
     temp_pdfs_dir: Path
     raw_dir: Path | None = None
     normalized_dir: Path | None = None
+    formula_enabled: bool | None = None
 
 
 def image_to_scanned_pdf(image_path: str | Path, pdf_path: str | Path) -> Path:
@@ -279,6 +280,7 @@ def generate_omnidocbench_predictions(
     save_raw: bool = False,
     save_normalized: bool = False,
     device: str = "cpu",
+    enable_formula: bool | None = None,
 ) -> OmniDocBenchPredictionSummary:
     """
     Prepare OmniDocBench samples and generate Torvex Markdown predictions.
@@ -327,9 +329,14 @@ def generate_omnidocbench_predictions(
 
     samples = iter_omnidocbench_samples_from_manifest(manifest_path, limit=limit)
 
-    adapter = TorvexExtractAdapter(device=device)
+    actual_enable_formula = True if enable_formula is None else enable_formula
 
-    return generate_omnidocbench_predictions_from_samples(
+    adapter = TorvexExtractAdapter(
+        device=device,
+        enable_formula=actual_enable_formula,
+    )
+
+    summary = generate_omnidocbench_predictions_from_samples(
         samples=samples,
         prediction_dir=prediction_dir,
         temp_pdfs_dir=temp_pdfs_dir,
@@ -340,3 +347,6 @@ def generate_omnidocbench_predictions(
         save_normalized=save_normalized,
         normalized_dir=normalized_dir,
     )
+
+    summary.formula_enabled = actual_enable_formula
+    return summary

@@ -4,6 +4,23 @@ import argparse
 from pathlib import Path
 
 
+def _resolve_formula_override(
+    *,
+    enable_formula: bool,
+    disable_formula: bool,
+) -> bool | None:
+    if enable_formula and disable_formula:
+        raise ValueError("Use only one of --enable-formula or --disable-formula.")
+
+    if enable_formula:
+        return True
+
+    if disable_formula:
+        return False
+
+    return None
+
+
 def positive_int(value: str) -> int:
     """
     Parse a positive integer CLI argument.
@@ -144,6 +161,10 @@ def official_omnidocbench_command(args: argparse.Namespace) -> int:
         save_normalized=args.save_normalized,
         device=args.device,
         eval_bin=args.eval_bin,
+        enable_formula=_resolve_formula_override(
+            enable_formula=args.enable_formula,
+            disable_formula=args.disable_formula,
+        ),
     )
 
     prediction_summary = summary.prediction_summary
@@ -152,6 +173,7 @@ def official_omnidocbench_command(args: argparse.Namespace) -> int:
     print("[torvex-bench] official OmniDocBench scanned result")
     print(f"  limit                     = {summary.limit}")
     print(f"  device                    = {args.device}")
+    print(f"  formula_enabled           = {prediction_summary.get('formula_enabled')}")
     print(f"  predictions_written       = {prediction_summary.get('predictions_written')}")
     print(f"  empty_predictions_written = {prediction_summary.get('empty_predictions_written')}")
     print(f"  skipped_existing          = {prediction_summary.get('skipped_existing')}")
@@ -198,6 +220,10 @@ def official_olmocr_command(args: argparse.Namespace) -> int:
         save_normalized=args.save_normalized,
         device=args.device,
         python_bin=args.python_bin,
+        enable_formula=_resolve_formula_override(
+            enable_formula=args.enable_formula,
+            disable_formula=args.disable_formula,
+        ),
     )
 
     prediction_summary = summary.prediction_summary
@@ -207,6 +233,7 @@ def official_olmocr_command(args: argparse.Namespace) -> int:
     print(f"  limit                     = {summary.limit}")
     print(f"  track                     = {summary.track}")
     print(f"  device                    = {summary.device}")
+    print(f"  formula_enabled           = {prediction_summary.get('formula_enabled')}")
     print(f"  predictions_written       = {prediction_summary.get('predictions_written')}")
     print(f"  empty_predictions_written = {prediction_summary.get('empty_predictions_written')}")
     print(f"  skipped_existing          = {prediction_summary.get('skipped_existing')}")
@@ -378,6 +405,17 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
 
+    omnidocbench_parser.add_argument(
+        "--enable-formula",
+        action="store_true",
+        help="Force-enable formula extraction.",
+    )
+    omnidocbench_parser.add_argument(
+        "--disable-formula",
+        action="store_true",
+        help="Force-disable formula extraction.",
+    )
+
     omnidocbench_parser.set_defaults(func=official_omnidocbench_command)
 
     olmocr_parser = subparsers.add_parser(
@@ -440,6 +478,17 @@ def build_parser() -> argparse.ArgumentParser:
             "Path to isolated olmOCR Python executable. "
             "Default: data/venvs/olmocr/Scripts/python.exe or OLMOCR_PYTHON."
         ),
+    )
+
+    olmocr_parser.add_argument(
+        "--enable-formula",
+        action="store_true",
+        help="Force-enable formula extraction.",
+    )
+    olmocr_parser.add_argument(
+        "--disable-formula",
+        action="store_true",
+        help="Force-disable formula extraction.",
     )
 
     olmocr_parser.set_defaults(func=official_olmocr_command)
