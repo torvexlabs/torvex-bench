@@ -205,3 +205,20 @@ def test_generate_predictions_writes_one_prediction_per_page(tmp_path: Path) -> 
         / "multi_page"
         / "sample_pg2_repeat1.md"
     ).exists()
+
+
+def test_olmocr_prediction_summary_can_record_formula_enabled(tmp_path) -> None:
+    from torvex_bench.harnesses.olmocr_eval import OlmOCRPredictionSummary
+
+    summary = OlmOCRPredictionSummary(
+        requested=1,
+        processed=1,
+        predictions_written=1,
+        empty_predictions_written=0,
+        skipped_existing=0,
+        errors=0,
+        prediction_dir=tmp_path / "predictions",
+        formula_enabled=False,
+    )
+
+    assert summary.formula_enabled is False

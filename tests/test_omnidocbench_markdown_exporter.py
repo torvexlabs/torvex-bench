@@ -126,3 +126,24 @@ def test_export_sample_markdown_prediction_uses_prediction_filename(
 
     assert result_path == tmp_path / "page-abc.md"
     assert result_path.read_text(encoding="utf-8") == "Sample text\n"
+
+
+def test_omnidocbench_markdown_emits_display_formula_latex() -> None:
+    from torvex_bench.exporters.omnidocbench_markdown import normalized_page_to_markdown
+
+    page = {
+        "text": "Before formula.",
+        "formulas": [
+            {
+                "type": "display_formula",
+                "latex": r"\frac{a}{b}",
+                "status": "accepted",
+            }
+        ],
+        "tables": [],
+    }
+
+    markdown = normalized_page_to_markdown(page)
+
+    assert "Before formula." in markdown
+    assert "$$\n\\frac{a}{b}\n$$" in markdown

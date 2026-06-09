@@ -125,3 +125,24 @@ def test_export_olmocr_markdown_prediction_writes_nested_official_path(
     assert result == prediction_path
     assert prediction_path.exists()
     assert prediction_path.read_text(encoding="utf-8") == "Prediction text\n"
+
+
+def test_olmocr_markdown_emits_display_formula_latex() -> None:
+    from torvex_bench.exporters.olmocr_markdown import normalized_page_to_markdown
+
+    page = {
+        "text": "Before formula.",
+        "formulas": [
+            {
+                "type": "display_formula",
+                "latex": r"\sum_i x_i",
+                "status": "accepted",
+            }
+        ],
+        "tables": [],
+    }
+
+    markdown = normalized_page_to_markdown(page)
+
+    assert "Before formula." in markdown
+    assert "$$\n\\sum_i x_i\n$$" in markdown

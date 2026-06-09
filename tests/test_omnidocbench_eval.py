@@ -159,3 +159,21 @@ def test_generate_predictions_writes_empty_prediction_on_error(
     assert prediction_path.exists()
     assert prediction_path.read_text(encoding="utf-8") == ""
     assert error_path.exists()
+
+
+def test_omnidocbench_prediction_summary_can_record_formula_enabled(tmp_path) -> None:
+    from torvex_bench.harnesses.omnidocbench_eval import OmniDocBenchPredictionSummary
+
+    summary = OmniDocBenchPredictionSummary(
+        requested=1,
+        processed=1,
+        predictions_written=1,
+        empty_predictions_written=0,
+        skipped_existing=0,
+        errors=0,
+        prediction_dir=tmp_path / "predictions",
+        temp_pdfs_dir=tmp_path / "temp_pdfs",
+        formula_enabled=True,
+    )
+
+    assert summary.formula_enabled is True
