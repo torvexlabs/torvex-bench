@@ -176,21 +176,22 @@ def convert_page(raw_page: dict[str, Any]) -> PageResult:
             metadata[key] = raw_page[key]
 
     return PageResult(
-        page_num=int(raw_page.get("page_num", 0)),
-        text=str(raw_page.get("final_text") or raw_page.get("text") or ""),
-        tables=[
-            convert_table(raw_table)
-            for raw_table in raw_page.get("tables") or []
-        ],
-        layout_zones=list(raw_page.get("zones") or []),
-        formula_bboxes=get_formula_bboxes(raw_page),
-        spotlight_bboxes=_bboxes_to_float_lists(
-            raw_page.get("spotlight_bboxes")
-        ),
-        needs_ocr=needs_ocr,
-        ocr_used=bool(raw_page.get("ocr_used", needs_ocr)),
-        metadata=metadata,
-    )
+    page_num=int(raw_page.get("page_num", 0)),
+    text=str(raw_page.get("final_text") or raw_page.get("text") or ""),
+    tables=[
+        convert_table(raw_table)
+        for raw_table in raw_page.get("tables") or []
+    ],
+    layout_zones=list(raw_page.get("zones") or []),
+    formula_bboxes=get_formula_bboxes(raw_page),
+    formulas=list(raw_page.get("formulas") or []),
+    spotlight_bboxes=_bboxes_to_float_lists(
+        raw_page.get("spotlight_bboxes")
+    ),
+    needs_ocr=needs_ocr,
+    ocr_used=bool(raw_page.get("ocr_used", needs_ocr)),
+    metadata=metadata,
+)
 
 
 def convert_document(
@@ -217,11 +218,12 @@ class TorvexExtractAdapter(ExtractionAdapter):
     name = "torvex_extract"
     version = "0.1.0"
 
-    def __init__(self, device: str = "cpu") -> None:
+    def __init__(self, device: str = "cpu", enable_formula: bool = False) -> None:
         if device not in {"cpu", "gpu"}:
             raise ValueError("device must be 'cpu' or 'gpu'")
 
         self.device = device
+        self.enable_formula = enable_formula
         self._warmed = False
 
     def _ensure_warmed(self) -> None:
@@ -236,19 +238,24 @@ class TorvexExtractAdapter(ExtractionAdapter):
     def extract_document(self, pdf_path: str | Path) -> DocumentResult:
         self._ensure_warmed()
 
-        from torvex_extract import extract_with_pypdfium2
-
-        pages, errors = torvex_extract.extract_with_pypdfium2(str(pdf_path))
+        
+        pages, errors = torvex_extract.extract_with_pypdfium2(
+        str(pdf_path),
+        enable_formula=self.enable_formula,
+        formula_device=self.device,
+    )
 
         raw_output = {
             "pdf": str(pdf_path),
             "pages": pages,
             "errors": errors,
             "metadata": {
-                "adapter": self.name,
-                "adapter_version": self.version,
-            },
-        }
+            "adapter": self.name,
+            "adapter_version": self.version,
+            "device": self.device,
+            "enable_formula": self.enable_formula,
+        },
+    }
 
         return convert_document(raw_output, pdf_path=str(pdf_path))
 

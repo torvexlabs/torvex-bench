@@ -49,6 +49,7 @@ def normalize_page(page: PageResult) -> dict[str, Any]:
             [float(value) for value in bbox]
             for bbox in page.formula_bboxes
         ],
+        "formulas": [dict(formula) for formula in page.formulas],
         "spotlight_bboxes": [
             [float(value) for value in bbox]
             for bbox in page.spotlight_bboxes

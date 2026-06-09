@@ -21,6 +21,7 @@ class PageResult:
     tables: list[TableResult] = field(default_factory=list)
     layout_zones: list[dict[str, Any]] = field(default_factory=list)
     formula_bboxes: list[list[float]] = field(default_factory=list)
+    formulas: list[dict[str, Any]] = field(default_factory=list)
     spotlight_bboxes: list[list[float]] = field(default_factory=list)
     needs_ocr: bool = False
     ocr_used: bool = False

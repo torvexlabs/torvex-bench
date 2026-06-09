@@ -300,3 +300,42 @@ def test_get_formula_bboxes_ignores_invalid_entries() -> None:
     }
 
     assert get_formula_bboxes(page) == []
+
+def test_convert_page_preserves_formula_artifacts() -> None:
+    from torvex_bench.adapters.torvex_extract_adapter import convert_page
+
+    raw_page = {
+        "page_num": 0,
+        "final_text": "Text before formula.",
+        "needs_ocr": True,
+        "formula_bboxes": [
+            {
+                "formula_id": "formula_0_1",
+                "type": "display_formula",
+                "bbox_pdfium": [10, 20, 100, 40],
+                "bbox_px": [30, 60, 300, 120],
+                "score": 0.9,
+            }
+        ],
+        "formulas": [
+            {
+                "formula_id": "formula_0_1",
+                "type": "display_formula",
+                "latex": r"\frac{a}{b}",
+                "confidence": 0.91,
+                "status": "accepted",
+                "bbox_pdfium": [10, 20, 100, 40],
+                "bbox_px": [30, 60, 300, 120],
+            }
+        ],
+        "tables": [],
+        "zones": [],
+        "spotlight_bboxes": [],
+    }
+
+    page = convert_page(raw_page)
+
+    assert page.formula_bboxes == [[10.0, 20.0, 100.0, 40.0]]
+    assert len(page.formulas) == 1
+    assert page.formulas[0]["latex"] == r"\frac{a}{b}"
+    assert page.formulas[0]["status"] == "accepted"
