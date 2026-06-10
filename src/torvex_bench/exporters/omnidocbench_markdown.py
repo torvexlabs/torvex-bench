@@ -256,6 +256,54 @@ def _best_table_for_zone(
     return best_index
 
 
+def _formula_bbox(formula: dict[str, Any]) -> list[float] | None:
+    """
+    Prefer bbox_px because layout formula zones also use bbox_px in scanned OmniDocBench.
+    """
+    return (
+        _bbox(formula.get("bbox_px"))
+        or _bbox(formula.get("bbox_plumber"))
+        or _bbox(formula.get("bbox_pdfium"))
+    )
+
+
+def _best_formula_for_zone(
+    zone: dict[str, Any],
+    formulas: list[dict[str, Any]],
+    used_formula_indexes: set[int],
+) -> int | None:
+    """
+    Match one layout display_formula zone to one normalized formula artifact.
+
+    This prevents accepted display formulas from being appended at page end,
+    which hurts OmniDocBench reading_order.
+    """
+    zone_box = _zone_bbox(zone)
+
+    best_index: int | None = None
+    best_score = 0.0
+
+    for index, formula in enumerate(formulas):
+        if index in used_formula_indexes:
+            continue
+
+        if not formula_to_markdown(formula):
+            continue
+
+        score = _bbox_iou(zone_box, _formula_bbox(formula))
+        if score > best_score:
+            best_score = score
+            best_index = index
+
+    if best_index is None:
+        return None
+
+    if best_score < 0.05:
+        return None
+
+    return best_index
+
+
 def _fallback_page_to_markdown(page: dict[str, Any]) -> str:
     """
     Original safe exporter behavior.
@@ -288,34 +336,38 @@ def normalized_page_to_markdown(page: dict[str, Any]) -> str:
     Convert one normalized page dictionary into OmniDocBench Markdown.
 
     2026-06-10:
-    Narrow table-order patch.
+    Interleave single-table pages safely.
+
+    2026-06-11:
+    Interleave accepted display formulas at their layout-zone position.
 
     Why:
-        run_020 inspection showed pages where the engine had a table layout zone
-        before body text, but this exporter appended the HTML table after all text.
-        That hurts OmniDocBench reading_order and table-page matching.
-
-    Safety:
-        - Only activates when both tables and table layout zones exist.
-        - Pure text pages still use the old page["text"] fallback.
-        - If table/zone matching fails, unmatched tables are appended as before.
+        Formula-enabled runs improved formula edit quality, but reading_order dropped
+        because formulas were appended after all page text. This patch emits display
+        formulas where their display_formula layout zones appear.
     """
     tables = list(page.get("tables") or [])
+    formulas = list(page.get("formulas") or [])
     zones = list(page.get("layout_zones") or [])
 
     table_zone_count = sum(1 for zone in zones if str(zone.get("type") or "") == "table")
+    formula_zone_count = sum(
+        1 for zone in zones if str(zone.get("type") or "") == "display_formula"
+    )
 
-    # 2026-06-10:
-    # Keep this patch intentionally narrow.
-    # Single-table pages improved in run_021, but multi-table double-column pages
-    # can regress when the engine zone order places the right table before the left.
-    # Until engine multi-column table ordering is fixed, only interleave exactly one
-    # structured table with exactly one table zone.
-    if not tables or not zones or len(tables) != 1 or table_zone_count != 1:
+    should_interleave_single_table = bool(
+        tables and zones and len(tables) == 1 and table_zone_count == 1
+    )
+    should_interleave_formulas = bool(
+        formulas and zones and formula_zone_count > 0
+    )
+
+    if not should_interleave_single_table and not should_interleave_formulas:
         return _fallback_page_to_markdown(page)
 
     blocks: list[str] = []
     used_table_indexes: set[int] = set()
+    used_formula_indexes: set[int] = set()
 
     skip_zone_types = {
         "image",
@@ -325,7 +377,6 @@ def normalized_page_to_markdown(page: dict[str, Any]) -> str:
         "footer_image",
         "seal",
         "inline_formula",
-        "display_formula",
         "formula_number",
     }
 
@@ -333,12 +384,27 @@ def normalized_page_to_markdown(page: dict[str, Any]) -> str:
         zone_type = str(zone.get("type") or "")
 
         if zone_type == "table":
-            table_index = _best_table_for_zone(zone, tables, used_table_indexes)
-            if table_index is not None:
-                table_html = table_rows_to_html(tables[table_index].get("rows") or [])
-                if table_html:
-                    blocks.append(table_html)
-                    used_table_indexes.add(table_index)
+            if should_interleave_single_table:
+                table_index = _best_table_for_zone(zone, tables, used_table_indexes)
+                if table_index is not None:
+                    table_html = table_rows_to_html(tables[table_index].get("rows") or [])
+                    if table_html:
+                        blocks.append(table_html)
+                        used_table_indexes.add(table_index)
+            continue
+
+        if zone_type == "display_formula":
+            if should_interleave_formulas:
+                formula_index = _best_formula_for_zone(
+                    zone,
+                    formulas,
+                    used_formula_indexes,
+                )
+                if formula_index is not None:
+                    formula_md = formula_to_markdown(formulas[formula_index])
+                    if formula_md:
+                        blocks.append(formula_md)
+                        used_formula_indexes.add(formula_index)
             continue
 
         if zone_type in skip_zone_types:
@@ -348,7 +414,10 @@ def normalized_page_to_markdown(page: dict[str, Any]) -> str:
         if zone_text:
             blocks.append(zone_text)
 
-    for formula in page.get("formulas") or []:
+    for index, formula in enumerate(formulas):
+        if index in used_formula_indexes:
+            continue
+
         formula_md = formula_to_markdown(formula)
         if formula_md:
             blocks.append(formula_md)
@@ -366,6 +435,7 @@ def normalized_page_to_markdown(page: dict[str, Any]) -> str:
         return markdown + "\n"
 
     return _fallback_page_to_markdown(page)
+
 
 def normalized_document_to_markdown(document: dict[str, Any]) -> str:
     """
