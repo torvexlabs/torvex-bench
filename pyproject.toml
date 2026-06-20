@@ -5,12 +5,23 @@ build-backend = "hatchling.build"
 [project]
 name = "torvex-bench"
 version = "0.1.0"
-description = "Reproducible benchmark harness for Torvex Extract, Docling, and PPStructureV3."
+description = "Reproducible benchmark harness for Torvex Extract."
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "MIT" }
+license = { file = "LICENSE" }
 authors = [
-  { name = "Torvex Labs" }
+  { name = "Sibisrinivas B" }
+]
+maintainers = [
+  { name = "Sibisrinivas B" }
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 
 dependencies = [
@@ -47,6 +58,11 @@ all = [
 
 [project.scripts]
 torvex-bench = "torvex_bench.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/torvexlabs/torvex-bench"
+Repository = "https://github.com/torvexlabs/torvex-bench"
+"Torvex Extract" = "https://github.com/torvexlabs/torvex-extract"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/torvex_bench"]
