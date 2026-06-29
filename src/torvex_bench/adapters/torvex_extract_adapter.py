@@ -40,6 +40,9 @@ from torvex_bench.adapters.base import (
 )
 
 
+SUPPORTED_OCR_BACKENDS = {"onnxtr_fast_base", "ppocrv6_small"}
+
+
 def get_formula_bboxes(page: dict[str, Any]) -> list[list[float]]:
     """
     Return formula bounding boxes for one page.
@@ -218,20 +221,43 @@ class TorvexExtractAdapter(ExtractionAdapter):
     name = "torvex_extract"
     version = "0.1.0"
 
-    def __init__(self, device: str = "cpu", enable_formula: bool = False) -> None:
+    def __init__(
+        self,
+        device: str = "cpu",
+        enable_formula: bool = False,
+        ocr_backend: str = "onnxtr_fast_base",
+    ) -> None:
         if device not in {"cpu", "gpu"}:
             raise ValueError("device must be 'cpu' or 'gpu'")
 
+        if ocr_backend not in SUPPORTED_OCR_BACKENDS:
+            raise ValueError(
+                "ocr_backend must be one of: "
+                + ", ".join(sorted(SUPPORTED_OCR_BACKENDS))
+            )
+
         self.device = device
         self.enable_formula = enable_formula
+        self.ocr_backend = ocr_backend
         self._warmed = False
 
     def _ensure_warmed(self) -> None:
-        if self._warmed:
+        if self._warmed and torvex_extract.is_warmed():
             return
 
+        active_backend = None
+        engine = getattr(torvex_extract, "engine", None)
+        if engine is not None and hasattr(engine, "ocr_backend_name"):
+            active_backend = engine.ocr_backend_name()
+
+        if torvex_extract.is_warmed() and active_backend != self.ocr_backend:
+            torvex_extract.shutdown()
+
         if not torvex_extract.is_warmed():
-            torvex_extract.warm(device=self.device)
+            torvex_extract.warm(
+                device=self.device,
+                ocr_backend=self.ocr_backend,
+            )
 
         self._warmed = True
 
@@ -253,6 +279,7 @@ class TorvexExtractAdapter(ExtractionAdapter):
             "adapter": self.name,
             "adapter_version": self.version,
             "device": self.device,
+            "ocr_backend": self.ocr_backend,
             "enable_formula": self.enable_formula,
         },
     }

@@ -304,6 +304,63 @@ def _best_formula_for_zone(
     return best_index
 
 
+def _formulas_for_zone(
+    zone: dict[str, Any],
+    formulas: list[dict[str, Any]],
+    used_formula_indexes: set[int],
+) -> list[int]:
+    """
+    2026-06-11 display-formula splitter support.
+
+    torvex-extract now splits merged PP-DocLayoutV3 display boxes, so ONE
+    layout display_formula zone legitimately maps to MANY formula artifacts.
+    The old _best_formula_for_zone emitted only the single best-IoU formula;
+    the leftover split children fell through to the append-at-page-end loop,
+    which re-broke reading order. This returns ALL emittable formulas that
+    sit inside the zone, sorted top-to-bottom.
+
+    Overlap is intersection-over-FORMULA-area (>= 0.5), not IoU: split
+    children are small relative to the parent zone, so IoU is misleadingly
+    low even for a perfect child. Plain IoU >= 0.05 is kept as a fallback
+    for the unsplit one-formula case.
+    """
+    zone_box = _zone_bbox(zone)
+    if zone_box is None:
+        return []
+
+    matched: list[tuple[float, int]] = []
+
+    for index, formula in enumerate(formulas):
+        if index in used_formula_indexes:
+            continue
+        if not formula_to_markdown(formula):
+            continue
+
+        formula_box = _formula_bbox(formula)
+        if formula_box is None:
+            continue
+
+        ix0 = max(zone_box[0], formula_box[0])
+        iy0 = max(zone_box[1], formula_box[1])
+        ix1 = min(zone_box[2], formula_box[2])
+        iy1 = min(zone_box[3], formula_box[3])
+
+        if ix1 <= ix0 or iy1 <= iy0:
+            continue
+
+        inter = (ix1 - ix0) * (iy1 - iy0)
+        formula_area = (formula_box[2] - formula_box[0]) * (formula_box[3] - formula_box[1])
+
+        inside_enough = formula_area > 0 and (inter / formula_area) >= 0.5
+        iou_enough = _bbox_iou(zone_box, formula_box) >= 0.05
+
+        if inside_enough or iou_enough:
+            matched.append((formula_box[1], index))
+
+    matched.sort()
+    return [index for _, index in matched]
+
+
 def _fallback_page_to_markdown(page: dict[str, Any]) -> str:
     """
     Original safe exporter behavior.
@@ -395,12 +452,16 @@ def normalized_page_to_markdown(page: dict[str, Any]) -> str:
 
         if zone_type == "display_formula":
             if should_interleave_formulas:
-                formula_index = _best_formula_for_zone(
+                # 2026-06-11 display-formula splitter: one zone can now map
+                # to MANY formulas. Emit every match here, top-to-bottom,
+                # instead of one best-IoU formula (which pushed split
+                # siblings to the page-end leftover loop and broke
+                # reading_order).
+                for formula_index in _formulas_for_zone(
                     zone,
                     formulas,
                     used_formula_indexes,
-                )
-                if formula_index is not None:
+                ):
                     formula_md = formula_to_markdown(formulas[formula_index])
                     if formula_md:
                         blocks.append(formula_md)

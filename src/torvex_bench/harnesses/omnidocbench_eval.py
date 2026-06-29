@@ -108,6 +108,7 @@ class OmniDocBenchPredictionSummary:
     raw_dir: Path | None = None
     normalized_dir: Path | None = None
     formula_enabled: bool | None = None
+    ocr_backend: str | None = None
     page_memory_probe_path: Path | None = None
 
 
@@ -332,6 +333,7 @@ def generate_omnidocbench_predictions(
     save_raw: bool = False,
     save_normalized: bool = False,
     device: str = "cpu",
+    ocr_backend: str = "onnxtr_fast_base",
     enable_formula: bool | None = None,
 ) -> OmniDocBenchPredictionSummary:
     """
@@ -381,10 +383,11 @@ def generate_omnidocbench_predictions(
 
     samples = iter_omnidocbench_samples_from_manifest(manifest_path, limit=limit)
 
-    actual_enable_formula = True if enable_formula is None else enable_formula
+    actual_enable_formula = False if enable_formula is None else enable_formula
 
     adapter = TorvexExtractAdapter(
         device=device,
+        ocr_backend=ocr_backend,
         enable_formula=actual_enable_formula,
     )
 
@@ -401,4 +404,5 @@ def generate_omnidocbench_predictions(
     )
 
     summary.formula_enabled = actual_enable_formula
+    summary.ocr_backend = ocr_backend
     return summary

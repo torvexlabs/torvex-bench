@@ -69,6 +69,7 @@ class OfficialOmniDocBenchSummary:
     dataset: str
     engine: str
     limit: int
+    ocr_backend: str
     work_dir: Path
     gt_subset_path: Path
     predictions_dir: Path
@@ -318,6 +319,7 @@ def run_official_omnidocbench(
     clean: bool = True,
     save_normalized: bool = False,
     device: str = "cpu",
+    ocr_backend: str = "onnxtr_fast_base",
     eval_bin: str | Path | None = None,
     enable_formula: bool | None = None,
 ) -> OfficialOmniDocBenchSummary:
@@ -356,7 +358,7 @@ def run_official_omnidocbench(
     config_path = work_dir / "config.yaml"
     summary_path = work_dir / "summary.json"
     
-    actual_enable_formula = True if enable_formula is None else enable_formula
+    actual_enable_formula = False if enable_formula is None else enable_formula
 
     prediction_summary: OmniDocBenchPredictionSummary = generate_omnidocbench_predictions(
         work_dir=work_dir,
@@ -365,6 +367,7 @@ def run_official_omnidocbench(
         save_raw=False,
         save_normalized=save_normalized,
         device=device,
+        ocr_backend=ocr_backend,
         enable_formula=actual_enable_formula,
     )
     mark_phase("prediction_generation")
@@ -411,6 +414,7 @@ def run_official_omnidocbench(
         dataset="OmniDocBench_scanned",
         engine=DEFAULT_ENGINE_NAME,
         limit=limit,
+        ocr_backend=ocr_backend,
         work_dir=work_dir,
         gt_subset_path=gt_subset_path,
         predictions_dir=predictions_dir,

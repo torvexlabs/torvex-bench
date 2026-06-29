@@ -160,6 +160,7 @@ def official_omnidocbench_command(args: argparse.Namespace) -> int:
         clean=args.clean,
         save_normalized=args.save_normalized,
         device=args.device,
+        ocr_backend=args.ocr_backend,
         eval_bin=args.eval_bin,
         enable_formula=_resolve_formula_override(
             enable_formula=args.enable_formula,
@@ -173,6 +174,7 @@ def official_omnidocbench_command(args: argparse.Namespace) -> int:
     print("[torvex-bench] official OmniDocBench scanned result")
     print(f"  limit                     = {summary.limit}")
     print(f"  device                    = {args.device}")
+    print(f"  ocr_backend               = {args.ocr_backend}")
     print(f"  formula_enabled           = {prediction_summary.get('formula_enabled')}")
     print(f"  predictions_written       = {prediction_summary.get('predictions_written')}")
     print(f"  empty_predictions_written = {prediction_summary.get('empty_predictions_written')}")
@@ -392,6 +394,13 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["cpu", "gpu"],
         default="cpu",
         help="Torvex Extract ONNX inference device.",
+    )
+
+    omnidocbench_parser.add_argument(
+        "--ocr-backend",
+        choices=["onnxtr_fast_base", "ppocrv6_small"],
+        default="onnxtr_fast_base",
+        help="Torvex Extract OCR backend for scanned pages.",
     )
 
     omnidocbench_parser.add_argument(

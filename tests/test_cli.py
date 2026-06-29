@@ -21,6 +21,22 @@ def test_omnidocbench_formula_flags_parse() -> None:
     assert args.disable_formula is False
 
 
+def test_omnidocbench_ocr_backend_parse() -> None:
+    parser = build_parser()
+
+    args = parser.parse_args(
+        [
+            "official-omnidocbench",
+            "--limit",
+            "1",
+            "--ocr-backend",
+            "ppocrv6_small",
+        ]
+    )
+
+    assert args.ocr_backend == "ppocrv6_small"
+
+
 def test_olmocr_formula_flags_parse() -> None:
     parser = build_parser()
 
