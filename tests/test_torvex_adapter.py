@@ -274,6 +274,92 @@ def test_torvex_extract_adapter_imports():
     assert callable(adapter.extract_document)
 
 
+def test_torvex_extract_adapter_warms_with_selected_ocr_backend(monkeypatch):
+    from torvex_bench.adapters import torvex_extract_adapter as adapter_module
+
+    calls = []
+
+    class FakeEngine:
+        backend = "onnxtr_fast_base"
+
+        def ocr_backend_name(self):
+            return self.backend
+
+    class FakeTorvexExtract:
+        engine = FakeEngine()
+        warmed = False
+
+        @classmethod
+        def is_warmed(cls):
+            return cls.warmed
+
+        @classmethod
+        def warm(cls, *, device, ocr_backend):
+            calls.append(("warm", device, ocr_backend))
+            cls.engine.backend = ocr_backend
+            cls.warmed = True
+
+        @classmethod
+        def shutdown(cls):
+            calls.append(("shutdown",))
+            cls.warmed = False
+
+    monkeypatch.setattr(adapter_module, "torvex_extract", FakeTorvexExtract)
+
+    adapter = TorvexExtractAdapter(device="gpu", ocr_backend="ppocrv6_small")
+    adapter._ensure_warmed()
+
+    assert calls == [("warm", "gpu", "ppocrv6_small")]
+
+
+def test_torvex_extract_adapter_rewarms_when_backend_changes(monkeypatch):
+    from torvex_bench.adapters import torvex_extract_adapter as adapter_module
+
+    calls = []
+
+    class FakeEngine:
+        backend = "onnxtr_fast_base"
+
+        def ocr_backend_name(self):
+            return self.backend
+
+    class FakeTorvexExtract:
+        engine = FakeEngine()
+        warmed = True
+
+        @classmethod
+        def is_warmed(cls):
+            return cls.warmed
+
+        @classmethod
+        def warm(cls, *, device, ocr_backend):
+            calls.append(("warm", device, ocr_backend))
+            cls.engine.backend = ocr_backend
+            cls.warmed = True
+
+        @classmethod
+        def shutdown(cls):
+            calls.append(("shutdown",))
+            cls.warmed = False
+
+    monkeypatch.setattr(adapter_module, "torvex_extract", FakeTorvexExtract)
+
+    adapter = TorvexExtractAdapter(device="cpu", ocr_backend="ppocrv6_small")
+    adapter._ensure_warmed()
+
+    assert calls == [
+        ("shutdown",),
+        ("warm", "cpu", "ppocrv6_small"),
+    ]
+
+
+def test_torvex_extract_adapter_rejects_unknown_ocr_backend():
+    import pytest
+
+    with pytest.raises(ValueError, match="ocr_backend"):
+        TorvexExtractAdapter(ocr_backend="unknown")
+
+
 def test_get_formula_bboxes_accepts_dict_entries() -> None:
     page = {
         "formula_bboxes": [
