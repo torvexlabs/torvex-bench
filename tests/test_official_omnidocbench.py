@@ -1,4 +1,5 @@
 import json
+from types import SimpleNamespace
 from pathlib import Path
 
 from torvex_bench.datasets.omnidocbench import OmniDocBenchSample
@@ -8,6 +9,7 @@ from torvex_bench.harnesses.official_omnidocbench import (
     write_official_omnidocbench_config,
     write_subset_gt_json,
 )
+from torvex_bench.harnesses.omnidocbench_eval import OmniDocBenchPredictionSummary
 
 
 def make_sample() -> OmniDocBenchSample:
@@ -137,3 +139,57 @@ def test_write_official_omnidocbench_config_omits_formula_cdm_when_disabled(tmp_
 
     assert "display_formula:" not in text
     assert "- CDM" not in text
+
+
+def test_run_official_omnidocbench_forwards_ocr_backend_and_defaults_formula_off(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    import torvex_bench.harnesses.official_omnidocbench as module
+
+    calls = {}
+
+    def fake_generate_predictions(**kwargs):
+        calls["generate"] = kwargs
+        return OmniDocBenchPredictionSummary(
+            requested=1,
+            processed=1,
+            predictions_written=1,
+            empty_predictions_written=0,
+            skipped_existing=0,
+            errors=0,
+            prediction_dir=tmp_path / "predictions" / "torvex_extract",
+            temp_pdfs_dir=tmp_path / "temp_pdfs" / "torvex_extract",
+            formula_enabled=kwargs["enable_formula"],
+            ocr_backend=kwargs["ocr_backend"],
+        )
+
+    monkeypatch.setattr(module, "generate_omnidocbench_predictions", fake_generate_predictions)
+    monkeypatch.setattr(
+        module,
+        "prepare_omnidocbench",
+        lambda **kwargs: tmp_path / "sample_manifest.jsonl",
+    )
+    monkeypatch.setattr(
+        module,
+        "iter_omnidocbench_samples_from_manifest",
+        lambda manifest_path, limit: [make_sample()],
+    )
+    monkeypatch.setattr(
+        module,
+        "run_official_omnidocbench_eval",
+        lambda **kwargs: SimpleNamespace(returncode=0, stdout="", stderr=""),
+    )
+
+    summary = module.run_official_omnidocbench(
+        work_dir=tmp_path,
+        limit=1,
+        clean=False,
+        ocr_backend="ppocrv6_small",
+    )
+
+    assert calls["generate"]["ocr_backend"] == "ppocrv6_small"
+    assert calls["generate"]["enable_formula"] is False
+    assert summary.ocr_backend == "ppocrv6_small"
+    assert summary.prediction_summary["formula_enabled"] is False
+    assert summary.prediction_summary["ocr_backend"] == "ppocrv6_small"
