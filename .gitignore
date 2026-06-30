@@ -53,6 +53,7 @@ data/
 *.jsonl.gz
 # Generated benchmark datasets, predictions, temp PDFs, and official eval outputs
 benchmarks/
+result_summary.txt
 
 # Temporary tuning/debug workspace
 _tuning/
