@@ -5,6 +5,8 @@ from PIL import Image
 from torvex_bench.adapters.base import DocumentResult, PageResult, TableResult
 from torvex_bench.datasets.omnidocbench import OmniDocBenchSample
 from torvex_bench.harnesses.omnidocbench_eval import (
+    OmniDocBenchPredictionSummary,
+    generate_omnidocbench_predictions,
     generate_omnidocbench_predictions_from_samples,
     image_to_scanned_pdf,
 )
@@ -177,3 +179,68 @@ def test_omnidocbench_prediction_summary_can_record_formula_enabled(tmp_path) ->
     )
 
     assert summary.formula_enabled is True
+
+
+def test_generate_omnidocbench_predictions_passes_ocr_backend_and_defaults_formula_off(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    import torvex_bench.harnesses.omnidocbench_eval as module
+
+    calls = {}
+
+    class FakeAdapter:
+        def __init__(self, *, device: str, ocr_backend: str, enable_formula: bool) -> None:
+            calls["adapter"] = {
+                "device": device,
+                "ocr_backend": ocr_backend,
+                "enable_formula": enable_formula,
+            }
+
+    def fake_generate_from_samples(**kwargs):
+        calls["samples"] = kwargs["samples"]
+        calls["adapter_instance"] = kwargs["adapter"]
+        return OmniDocBenchPredictionSummary(
+            requested=1,
+            processed=1,
+            predictions_written=1,
+            empty_predictions_written=0,
+            skipped_existing=0,
+            errors=0,
+            prediction_dir=kwargs["prediction_dir"],
+            temp_pdfs_dir=kwargs["temp_pdfs_dir"],
+        )
+
+    monkeypatch.setattr(
+        module,
+        "prepare_omnidocbench",
+        lambda **kwargs: tmp_path / "sample_manifest.jsonl",
+    )
+    monkeypatch.setattr(
+        module,
+        "iter_omnidocbench_samples_from_manifest",
+        lambda manifest_path, limit: ["sample"],
+    )
+    monkeypatch.setattr(module, "TorvexExtractAdapter", FakeAdapter)
+    monkeypatch.setattr(
+        module,
+        "generate_omnidocbench_predictions_from_samples",
+        fake_generate_from_samples,
+    )
+
+    summary = generate_omnidocbench_predictions(
+        work_dir=tmp_path,
+        limit=1,
+        device="cpu",
+        ocr_backend="ppocrv6_small",
+    )
+
+    assert calls["adapter"] == {
+        "device": "cpu",
+        "ocr_backend": "ppocrv6_small",
+        "enable_formula": False,
+    }
+    assert calls["samples"] == ["sample"]
+    assert isinstance(calls["adapter_instance"], FakeAdapter)
+    assert summary.formula_enabled is False
+    assert summary.ocr_backend == "ppocrv6_small"
